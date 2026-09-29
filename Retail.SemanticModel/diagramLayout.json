@@ -1,0 +1,242 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 289,
+            "y": 742.0234375
+          },
+          "nodeIndex": "fact_sales",
+          "nodeLineageTag": "2ed587c4-cb5d-4ee5-84e6-b62cfed27df9",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 283,
+            "y": 1109.0234375
+          },
+          "nodeIndex": "DimDate",
+          "nodeLineageTag": "bbf8d54e-dd14-4109-8d8d-f7b812ad75a2",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 568,
+            "y": 716.0234375
+          },
+          "nodeIndex": "DimCustomer",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 578,
+            "y": 985.0234375
+          },
+          "nodeIndex": "DimProduct",
+          "nodeLineageTag": "9c19a36a-f187-4955-a414-c35a9d6b0dea",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 857,
+            "y": 707.5234375
+          },
+          "nodeIndex": "_Measure",
+          "nodeLineageTag": "92be779b-349a-4deb-81df-3aca43cf33f4",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 858,
+            "y": 865.7734375
+          },
+          "nodeIndex": "PeriodMonth",
+          "nodeLineageTag": "4f498a58-62c1-44ac-a2e1-4e6b8e629301",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1142,
+            "y": 865.7734375
+          },
+          "nodeIndex": "PeriodQuarter",
+          "nodeLineageTag": "8aa673bd-fc71-4be9-85c2-6c4c93816e31",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1426,
+            "y": 841.7734375
+          },
+          "nodeIndex": "PeriodYear",
+          "nodeLineageTag": "50f5afdf-5227-4ed4-a751-44d39815a63b",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 18,
+            "y": 746.8984375
+          },
+          "nodeIndex": "DimCountry",
+          "nodeLineageTag": "2d78af30-fd44-45bc-b467-b7aff24848a9",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1692,
+            "y": 794.6484375
+          },
+          "nodeIndex": "DimCustomerSegment",
+          "nodeLineageTag": "e8a2b3c4-5d6e-4f7a-8b9c-0123456789ab",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1958,
+            "y": 719.8359375
+          },
+          "nodeIndex": "DimCustomerLifecycle",
+          "nodeLineageTag": "e1b2c3d4-7a8b-4c9d-0e1f-123456789abc",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2242,
+            "y": 719.8359375
+          },
+          "nodeIndex": "DimFrequencyTier",
+          "nodeLineageTag": "f1a2b3c4-6d7e-4a8b-9c0d-123456789abc",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2508,
+            "y": 607.6171875
+          },
+          "nodeIndex": "DimCustomerDecile",
+          "nodeLineageTag": "c8d1e2f3-4a5b-6c7d-8e9f-0123456789aa",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2792,
+            "y": 607.6171875
+          },
+          "nodeIndex": "DimRepeatStatus",
+          "nodeLineageTag": "c8d1e2f3-4a5b-6c7d-8e9f-0123456789cc",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 3076,
+            "y": 607.6171875
+          },
+          "nodeIndex": "DimSpendTier",
+          "nodeLineageTag": "c8d1e2f3-4a5b-6c7d-8e9f-0123456789bb",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 3342,
+            "y": 489.2421875
+          },
+          "nodeIndex": "DimCancellationLossType",
+          "nodeLineageTag": "a1b2c3d4-e5f6-47a8-b9c0-111122224501",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 3626,
+            "y": 489.2421875
+          },
+          "nodeIndex": "DimCancellationOrderSize",
+          "nodeLineageTag": "a1b2c3d4-e5f6-47a8-b9c0-111122224401",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

@@ -1,0 +1,194 @@
+table fact_sales
+	lineageTag: 2ed587c4-cb5d-4ee5-84e6-b62cfed27df9
+
+	column Invoice
+		dataType: string
+		lineageTag: 46ca644a-5257-4835-b21a-007e5462cbb0
+		summarizeBy: none
+		sourceColumn: Invoice
+
+		annotation SummarizationSetBy = Automatic
+
+	column StockCode
+		dataType: string
+		lineageTag: 6e5ae0f8-bbbc-4f28-b0c7-47e8f3cff0e5
+		summarizeBy: none
+		sourceColumn: StockCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 600c5c98-5338-485c-8002-36ffd1752f41
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: 030447d2-382b-498c-919a-ceaabc4f369c
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 30fb1f28-60d7-4f80-ae4d-369855acc3e0
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column Price
+		dataType: double
+		lineageTag: 7d86e93d-1fef-4a7d-bef2-7f972acbef97
+		summarizeBy: none
+		sourceColumn: Price
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Customer ID'
+		dataType: int64
+		formatString: 0
+		lineageTag: 52080151-96ef-4321-a471-b9016cdb1af3
+		summarizeBy: none
+		sourceColumn: Customer ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		dataType: string
+		lineageTag: 3ece2800-61b9-4d5c-99c9-2f0cab13ad3d
+		summarizeBy: none
+		sourceColumn: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column SourcePeriod
+		dataType: string
+		lineageTag: a20c2d51-9888-442e-ae1a-2c274dc1be36
+		summarizeBy: none
+		sourceColumn: SourcePeriod
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsCancellation
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: f642ff5e-ab5a-4c17-90f8-390d17c2552f
+		summarizeBy: none
+		sourceColumn: IsCancellation
+
+		annotation SummarizationSetBy = Automatic
+
+	column LineAmount
+		dataType: double
+		lineageTag: 247552d9-7574-4e45-a089-043e875535ef
+		summarizeBy: sum
+		sourceColumn: LineAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceDate_Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 9a529c93-054f-4d31-88ed-a1894a1e22f7
+		summarizeBy: none
+		sourceColumn: InvoiceDate_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column IsIdentifiedCustomer
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: e9dc5996-3ac3-4ca1-9a0f-a16886396245
+		summarizeBy: none
+		sourceColumn: IsIdentifiedCustomer
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsZeroPrice
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 89d79a76-e054-42c7-828d-98c09a6b6fa8
+		summarizeBy: none
+		sourceColumn: IsZeroPrice
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsMissingDescription
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 82d29f8d-4871-46ee-aca8-f1e699445379
+		summarizeBy: none
+		sourceColumn: IsMissingDescription
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsDuplicateCandidate
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 67ada5e9-e268-4765-b8ad-9ed0f59f27c3
+		summarizeBy: none
+		sourceColumn: IsDuplicateCandidate
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransactionStatus
+		dataType: string
+		lineageTag: 90b31c18-ba2e-4735-9eb6-96bb5e934ec0
+		summarizeBy: none
+		sourceColumn: TransactionStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPostage
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 22fd3582-fd59-40dc-935a-27a7df6d18d6
+		summarizeBy: none
+		sourceColumn: IsPostage
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsDiscount
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 20e66112-63af-4f43-9327-15848fbcf763
+		summarizeBy: none
+		sourceColumn: IsDiscount
+
+		annotation SummarizationSetBy = Automatic
+
+	column BusinessCategory
+		dataType: string
+		lineageTag: 6672f884-2d06-4748-b5b1-7d79d8ee27e9
+		summarizeBy: none
+		sourceColumn: BusinessCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_sales = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents("C:\REPLACE_WITH_YOUR_LOCAL_PATH\fact_sales.parquet"), [Compression=null, LegacyColumnNameEncoding=false, MaxDepth=null]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Invoice", type text}, {"StockCode", type text}, {"Description", type text}, {"Quantity", Int64.Type}, {"InvoiceDate", type datetime}, {"Price", type number}, {"Customer ID", Int64.Type}, {"Country", type text}, {"SourcePeriod", type text}, {"IsCancellation", type logical}, {"LineAmount", type number}, {"InvoiceDate_Date", type date}, {"IsIdentifiedCustomer", type logical}, {"IsZeroPrice", type logical}, {"IsMissingDescription", type logical}, {"IsDuplicateCandidate", type logical}, {"TransactionStatus", type text}, {"IsPostage", type logical}, {"IsDiscount", type logical}, {"BusinessCategory", type text}}),
+				    #"Removed Cross Sheet Overlap" = Table.SelectRows(#"Changed Type", each not ([SourcePeriod] = "2010-2011" and [InvoiceDate_Date] < #date(2010, 12, 10)))
+				in
+				    #"Removed Cross Sheet Overlap"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

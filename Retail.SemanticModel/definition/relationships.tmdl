@@ -1,0 +1,16 @@
+relationship 03da7c1e-7caf-66d5-d328-e72a733fd538
+	fromColumn: fact_sales.'Customer ID'
+	toColumn: DimCustomer.CustomerID
+
+relationship 1609f4fc-a9c3-f587-771c-3ee3d7412d43
+	fromColumn: fact_sales.StockCode
+	toColumn: DimProduct.StockCode
+
+relationship f2c494fc-616b-749e-91a3-8f5663a3222a
+	fromColumn: fact_sales.InvoiceDate_Date
+	toColumn: DimDate.Date
+
+relationship e33135a0-7b29-a0a6-ba5d-4c68dbaa39d0
+	fromColumn: fact_sales.Country
+	toColumn: DimCountry.Country
+

@@ -1,0 +1,38 @@
+table PeriodQuarter
+	lineageTag: 8aa673bd-fc71-4be9-85c2-6c4c93816e31
+
+	column PeriodLabel
+		dataType: string
+		lineageTag: f09f22b4-3949-41cb-a2f7-6e3944432966
+		summarizeBy: none
+		sourceColumn: [PeriodLabel]
+		sortByColumn: PeriodSort
+
+	column PeriodStart
+		isHidden
+		formatString: mmm yyyy
+		lineageTag: 3e84b78a-04e9-4c69-9051-8df320618661
+		summarizeBy: none
+		sourceColumn: [PeriodStart]
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column PeriodSort
+		isHidden
+		formatString: 0
+		lineageTag: 37940d7b-10cc-4c07-ba7e-3d01e470407e
+		summarizeBy: none
+		sourceColumn: [PeriodSort]
+
+	partition PeriodQuarter = calculated
+		mode: import
+		source =
+				SELECTCOLUMNS(
+				    SUMMARIZE(DimDate, DimDate[QuarterStart]),
+				    "PeriodLabel", "Q" & FORMAT(QUARTER(DimDate[QuarterStart]),"0") & " " & FORMAT(DimDate[QuarterStart],"yyyy"),
+				    "PeriodStart", DimDate[QuarterStart],
+				    "PeriodSort", YEAR(DimDate[QuarterStart])*10 + QUARTER(DimDate[QuarterStart])
+				)
+
+	annotation PBI_Id = a7062d7694564b98bc72c9b09d586dc6
+

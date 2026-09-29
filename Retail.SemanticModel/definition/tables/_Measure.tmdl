@@ -1,0 +1,2554 @@
+table _Measure
+	lineageTag: 92be779b-349a-4deb-81df-3aca43cf33f4
+
+	measure 'Net Sales' = SUM(fact_sales[LineAmount])
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: f417c6f8-5e67-4a30-88f3-0f59a577a067
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Gross Sales' =
+			
+			CALCULATE(
+			    SUM(fact_sales[LineAmount]),
+			    fact_sales[TransactionStatus]="Active"
+			)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: 4219a726-23ad-4f66-9c13-3e395700e25c
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Cancelled Values' =
+			
+			ABS(
+			    CALCULATE(
+			        SUM(fact_sales[LineAmount]),
+			        fact_sales[TransactionStatus]="Cancellation"
+			   )
+			)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 857dc2af-81b2-441f-94bb-da22546de82d
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure Orders =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(fact_sales[Invoice]),
+			    fact_sales[TransactionStatus]="Active"
+			)
+		formatString: 0
+		displayFolder: 01. Executive Overview
+		lineageTag: d27c5960-d296-4ebd-92b1-c167071219e2
+
+	measure 'Cancellation Orders' = CALCULATE(DISTINCTCOUNT(fact_sales[Invoice]),fact_sales[TransactionStatus]="Cancellation")
+		formatString: 0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 04a28517-67fb-4760-a7f1-b239ab2709e2
+
+	measure 'Active Customers' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(fact_sales[Customer ID]),
+			    fact_sales[TransactionStatus]="Active",
+			    fact_sales[IsIdentifiedCustomer]=TRUE()
+			)
+		formatString: 0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: b09527ac-b5a2-4dcb-bc89-4400876840e2
+
+	measure 'Repeat Customers' =
+			
+			COUNTROWS(
+			    FILTER(
+			        FILTER(
+			            VALUES(DimCustomer[CustomerID]),
+			            NOT ISBLANK(DimCustomer[CustomerID])
+			        ),
+			        CALCULATE(
+			            DISTINCTCOUNT(fact_sales[Invoice]),
+			            fact_sales[TransactionStatus]="Active"
+			        )>=2
+			    )
+			)
+		formatString: 0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 8919b65e-f169-4dcc-814c-efa7677d0116
+
+	measure 'Net Sales PY' =
+			
+			CALCULATE(
+			    [Net Sales],
+			    DATEADD(DimDate[Date],-1,YEAR)
+			)
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 0ba9b546-a992-45e4-912d-ed5ccb35c61f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Identified Customer Sales' =
+			
+			CALCULATE(
+			    [Net Sales],
+			    fact_sales[IsIdentifiedCustomer]=TRUE()
+			)
+		formatString: """£""#,0.00,,""M"";-""£""#,0.00,,""M"";""£""0.00,,""M"""
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 609b343b-8166-4433-9823-d0360efd4730
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cancelled Merchandise Values' =
+			CALCULATE(
+			    [Cancelled Values],
+			    fact_sales[BusinessCategory]="Merchandise"
+			)
+		formatString: "£"#,0.00; -"£"#,0.00; "£"0.00
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 53bb43a3-78cf-4e31-9d22-e6d842ffd803
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Context End Date' =
+			VAR _DataMax =
+			    CALCULATE(
+			        MAX(fact_sales[InvoiceDate_Date]),
+			        REMOVEFILTERS()
+			    )
+			VAR _MonthStart = SELECTEDVALUE(PeriodMonth[PeriodStart])
+			VAR _QuarterStart = SELECTEDVALUE(PeriodQuarter[PeriodStart])
+			VAR _Year = SELECTEDVALUE(PeriodYear[Year])
+			VAR _RequestedEnd =
+				SWITCH(
+					TRUE(),
+					NOT ISBLANK(_MonthStart), EOMONTH(_MonthStart, 0),
+					NOT ISBLANK(_QuarterStart), EOMONTH(_QuarterStart, 2),
+					NOT ISBLANK(_Year), DATE(_Year, 12, 31),
+					_DataMax
+				)
+			RETURN MIN(_DataMax, _RequestedEnd)
+		formatString: dd MMM yyyy
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7bd4a443-4b97-4627-9128-90cab8d5ba5f
+
+	measure 'Net Sales MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Net Sales], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 01. Executive Overview
+		lineageTag: 9e44d099-f8f3-4208-b64f-2a74721bcf5f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Gross Sales MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Gross Sales], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 01. Executive Overview
+		lineageTag: e9bed0c9-aae9-411f-a397-cdbb790b61cf
+
+	measure 'Orders MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Orders], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: #,0
+		displayFolder: 01. Executive Overview
+		lineageTag: f0775bfc-7a63-46e0-9562-c127d41bb55d
+
+	measure 'Active Customers MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Active Customers], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: c1a77db2-fba7-45fa-8377-056208602a0f
+
+	measure 'Net AOV MTD' = DIVIDE([Net Sales MTD], [Orders MTD])
+		formatString: "£"#,0.00; -"£"#,0.00; "£"0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: bd7f7347-5e70-4f58-a776-270259908673
+
+	measure 'Net Sales Prior Month Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),MONTH(_End),1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,0)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _PS=EDATE(_Start,-1)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0))
+			VAR _DataMin=[Data Min Date]
+			RETURN IF(_PS<_DataMin,BLANK(),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 90953e7a-a55f-4f9e-b1d2-21c5a4e9b0d9
+
+	measure 'Orders Prior Month Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),MONTH(_End),1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,0)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _PS=EDATE(_Start,-1)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0))
+			VAR _DataMin=[Data Min Date]
+			RETURN IF(_PS<_DataMin,BLANK(),CALCULATE([Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: efe3d5b5-18d1-4594-a0a4-abf56581a1a0
+
+	measure 'Active Customers Prior Month Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),MONTH(_End),1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,0)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _PS=EDATE(_Start,-1)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0))
+			VAR _DataMin=[Data Min Date]
+			RETURN IF(_PS<_DataMin,BLANK(),CALCULATE([Active Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 6100968b-9ee1-4c1a-a6f2-ca8e70c38241
+
+	measure 'Net AOV Prior Month Comparable' = DIVIDE([Net Sales Prior Month Comparable], [Orders Prior Month Comparable])
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 2788f616-1b66-4e10-867f-33d77259ad90
+
+	measure 'Cancelled Value MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Cancelled Values], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 9e4ab082-4ea9-40cf-8e1e-d88d8f4f8108
+
+	measure 'Cancellation Rate MTD' = DIVIDE([Cancelled Value MTD],[Gross Sales MTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: a37c460d-b5e7-4bc5-9f4c-b4a1df2bcf4d
+
+	measure 'Cancellation Orders MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Cancellation Orders], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: #,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: e2965078-f2d3-4fa9-bb4c-c875527a4d4a
+
+	measure 'Cancelled Merchandise MTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			RETURN CALCULATE([Cancelled Merchandise Values], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _Start, _End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 30697760-3c93-4b5d-b09f-e53ac2695944
+
+	measure 'Cancelled Value Prior Month Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),MONTH(_End),1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,0)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _PS=EDATE(_Start,-1)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0))
+			VAR _DataMin=[Data Min Date]
+			RETURN IF(_PS<_DataMin,BLANK(),CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: d6ff44cc-47b0-46dc-b1a3-7596b35f78a1
+
+	measure 'Cancellation Orders Prior Month Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),MONTH(_End),1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,0)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _PS=EDATE(_Start,-1)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0))
+			VAR _DataMin=[Data Min Date]
+			RETURN IF(_PS<_DataMin,BLANK(),CALCULATE([Cancellation Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: d1b281cf-534c-4ba7-b6d7-cc266e375c24
+
+	measure 'Cancellation Rate Prior Month Comparable' = DIVIDE([Cancelled Value Prior Month Comparable],[Gross Sales Prior Month Comparable])
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: b1944c54-7b46-477e-b557-5827de6a99d9
+
+	measure 'December Actual Cumulative' =
+			
+			VAR _AxisDay = MAX(DimDate[DayOfMonth])
+			VAR _End = [Context End Date]
+			VAR _CY = YEAR(_End)
+			VAR _CM = MONTH(_End)
+			VAR _CurrentDay = DAY(_End)
+			VAR _MaxMonthDay = DAY(EOMONTH(_End, 0))
+			VAR _CutoffDay = MIN(_CurrentDay, _MaxMonthDay)
+			RETURN
+			    IF(
+			        _AxisDay <= _CutoffDay,
+			        CALCULATE(
+			            [Net Sales],
+			            FILTER(
+			                ALL(DimDate),
+			                DimDate[Year] = _CY &&
+			                DimDate[MonthNo] = _CM &&
+			                DimDate[DayOfMonth] <= _AxisDay
+			            )
+			        ),
+			        BLANK()
+			    )
+		displayFolder: 01. Executive Overview
+		lineageTag: 1b57f1da-e98f-4100-940a-1885c0314ab5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'December Projected Cumulative' = ```
+			
+			VAR _AxisDay = MAX(DimDate[DayOfMonth])
+			VAR _End = [Context End Date]
+			VAR _CY = YEAR(_End)
+			VAR _CM = MONTH(_End)
+			VAR _CurrentDay = DAY(_End)
+			VAR _MaxMonthDay = DAY(EOMONTH(_End, 0))
+			VAR _IsOpenMonth = (_End < EOMONTH(_End, 0)) && (_End = [Data Max Date])
+			VAR _HistShare = 
+			    AVERAGEX(
+			        FILTER(ALL(DimDate[Year]), DimDate[Year] < _CY),
+			        VAR _Y = DimDate[Year]
+			        VAR _ToDay = CALCULATE([Net Sales], FILTER(ALL(DimDate), DimDate[Year] = _Y && DimDate[MonthNo] = _CM && DimDate[DayOfMonth] <= _AxisDay))
+			        VAR _Full = CALCULATE([Net Sales], FILTER(ALL(DimDate), DimDate[Year] = _Y && DimDate[MonthNo] = _CM))
+			        RETURN DIVIDE(_ToDay, _Full)
+			    )
+			VAR _HistPaceShareAtCutoff = 
+			    AVERAGEX(
+			        FILTER(ALL(DimDate[Year]), DimDate[Year] < _CY),
+			        VAR _Y = DimDate[Year]
+			        VAR _ToDay = CALCULATE([Net Sales], FILTER(ALL(DimDate), DimDate[Year] = _Y && DimDate[MonthNo] = _CM && DimDate[DayOfMonth] <= _CurrentDay))
+			        VAR _Full = CALCULATE([Net Sales], FILTER(ALL(DimDate), DimDate[Year] = _Y && DimDate[MonthNo] = _CM))
+			        RETURN DIVIDE(_ToDay, _Full)
+			    )
+			VAR _ProjectedMonthEnd = DIVIDE([Net Sales MTD], _HistPaceShareAtCutoff)
+			RETURN
+			    IF(
+			        _IsOpenMonth && _AxisDay >= _CurrentDay && _AxisDay <= _MaxMonthDay,
+			        IF(_AxisDay = _CurrentDay, [December Actual Cumulative], _ProjectedMonthEnd * _HistShare),
+			        BLANK()
+			    )
+			```
+		displayFolder: 01. Executive Overview
+		lineageTag: 8b4dd850-84fe-4cc8-b54f-c281efafdd36
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'December Historical Average Cumulative' =
+			
+			VAR _AxisDay = MAX(DimDate[DayOfMonth])
+			VAR _End = [Context End Date]
+			VAR _CY = YEAR(_End)
+			VAR _CM = MONTH(_End)
+			VAR _MaxMonthDay = DAY(EOMONTH(_End, 0))
+			RETURN
+			    IF(
+			        _AxisDay <= _MaxMonthDay,
+			        AVERAGEX(
+			            FILTER(ALL(DimDate[Year]), DimDate[Year] < _CY),
+			            VAR _Y = DimDate[Year]
+			            RETURN
+			                CALCULATE(
+			                    [Net Sales],
+			                    FILTER(
+			                        ALL(DimDate),
+			                        DimDate[Year] = _Y &&
+			                        DimDate[MonthNo] = _CM &&
+			                        DimDate[DayOfMonth] <= _AxisDay
+			                    )
+			                )
+			        ),
+			        BLANK()
+			    )
+		displayFolder: 01. Executive Overview
+		lineageTag: 8036b0ed-2c2f-4ae6-a862-4f398dc2e543
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Data Max Date' =
+			CALCULATE(
+			    MAX(fact_sales[InvoiceDate_Date]),
+			    REMOVEFILTERS()
+			)
+		formatString: dd MMM yyyy
+		displayFolder: 01. Executive Overview
+		lineageTag: 2e91a989-bbf7-489f-81b0-f3a89c61f385
+
+	measure 'Net Sales QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: 3621b8f7-c483-4c39-917d-dbdd79130ac9
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Gross Sales QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: e9ca6799-767a-4f30-a1a6-e9e19f96b3d5
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Orders QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: #,0
+		displayFolder: 01. Executive Overview
+		lineageTag: 64fe5271-e21a-4d43-9670-43fefb7b16a1
+
+	measure 'Active Customers QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Active Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 6c901789-2ddc-4881-9a46-568f92710fde
+
+	measure 'Net AOV QTD' = DIVIDE([Net Sales QTD],[Orders QTD])
+		formatString: "£"#,0.00;-"£"#,0.00;"£"0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: 92584f1f-d919-4565-b338-463999956008
+
+	measure 'Cancelled Value QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: edc0c9ff-c78b-4c42-b5f4-74cda6e4b2cd
+
+	measure 'Cancellation Rate QTD' = DIVIDE([Cancelled Value QTD],[Gross Sales QTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: cf138ac1-98ec-4d9b-ab40-7627423e21d3
+
+	measure 'Cancellation Orders QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Cancellation Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: #,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 81b621da-b47c-47d7-bf45-de1ac6958ac1
+
+	measure 'Cancelled Merchandise QTD' =
+			VAR _End=[Context End Date]
+			VAR _QStart=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Cancelled Merchandise Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_QStart,_End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: d8945d7d-fbb0-4bbe-935a-41b7a16b1b65
+
+	measure 'Net Sales Prior Quarter Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,2)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 91d12ed8-8667-46d9-bd03-4dd378318686
+
+	measure 'Net Sales YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: 45523719-f58a-4f54-b604-90f6c4ab5d6c
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Gross Sales YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: dff8cbdf-f169-4de5-8ac2-eada3324c2a2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Orders YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: #,0
+		displayFolder: 01. Executive Overview
+		lineageTag: 1dce4b4d-f3f5-4f26-9f01-21987d3955f0
+
+	measure 'Active Customers YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Active Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 1aad81d4-64c7-454e-8da8-b54961b6f74e
+
+	measure 'Net AOV YTD' = DIVIDE([Net Sales YTD],[Orders YTD])
+		displayFolder: 01. Executive Overview
+		lineageTag: f04d6b9e-5b8e-41a3-8ff2-d3b7f569e976
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cancelled Value YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 2c5e69be-e08e-4951-9664-bb76bd95b473
+
+	measure 'Cancellation Rate YTD' = DIVIDE([Cancelled Value YTD],[Gross Sales YTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 2fb88679-0e70-4463-b257-db19956469cc
+
+	measure 'Cancellation Orders YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Cancellation Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: #,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: aa30ee74-b3e9-48ea-8f15-54fba6e6eb5e
+
+	measure 'Cancelled Merchandise YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Cancelled Merchandise Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: """£""#,##0;-""£""#,##0;""£""0"""
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: cd94b275-8c05-4c7e-9017-b835e4a2a199
+
+	measure 'Net Sales PY YTD Comparable' =
+			VAR _End=[Context End Date]
+			VAR _CurrentYearEnd=DATE(YEAR(_End),12,31)
+			VAR _IsPartial=_End<_CurrentYearEnd
+			VAR _PS=DATE(YEAR(_End)-1,1,1)
+			VAR _PE=IF(_IsPartial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 377af312-f8b7-4321-a1c3-a99ba463b50d
+
+	measure 'Orders PY YTD Comparable' =
+			VAR _End=[Context End Date]
+			VAR _CurrentYearEnd=DATE(YEAR(_End),12,31)
+			VAR _IsPartial=_End<_CurrentYearEnd
+			VAR _PS=DATE(YEAR(_End)-1,1,1)
+			VAR _PE=IF(_IsPartial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 490e1a82-bb74-4d4d-9cc8-657592ac4ea8
+
+	measure 'Active Customers PY YTD Comparable' =
+			VAR _End=[Context End Date]
+			VAR _CurrentYearEnd=DATE(YEAR(_End),12,31)
+			VAR _IsPartial=_End<_CurrentYearEnd
+			VAR _PS=DATE(YEAR(_End)-1,1,1)
+			VAR _PE=IF(_IsPartial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Active Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: be4d8f49-cc97-4f31-8fa9-91558ac5a143
+
+	measure 'Net AOV PY YTD Comparable' = DIVIDE([Net Sales PY YTD Comparable],[Orders PY YTD Comparable])
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 6bedfae7-f571-4b7d-91f1-1dc2301aad72
+
+	measure 'Cancelled Value PY YTD Comparable' =
+			VAR _End=[Context End Date]
+			VAR _CurrentYearEnd=DATE(YEAR(_End),12,31)
+			VAR _IsPartial=_End<_CurrentYearEnd
+			VAR _PS=DATE(YEAR(_End)-1,1,1)
+			VAR _PE=IF(_IsPartial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 0e3a6d2a-6823-4afa-aea0-931876d5ce1a
+
+	measure 'Gross Sales PY YTD Comparable' =
+			VAR _End=[Context End Date]
+			VAR _CurrentYearEnd=DATE(YEAR(_End),12,31)
+			VAR _IsPartial=_End<_CurrentYearEnd
+			VAR _PS=DATE(YEAR(_End)-1,1,1)
+			VAR _PE=IF(_IsPartial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 201b5bfd-b6f3-4582-9da3-55f7fdd2301e
+
+	measure 'Cancellation Rate PY YTD Comparable' = DIVIDE([Cancelled Value PY YTD Comparable],[Gross Sales PY YTD Comparable])
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 2b04c21f-99ee-459a-ac30-eb1391f12e6c
+
+	measure 'Quarter Net Sales Latest Year' =
+			VAR _End=[Context End Date]
+			VAR _Y=YEAR(_End)
+			VAR _Q=VALUE(RIGHT(SELECTEDVALUE(DimDate[Quarter]),1))
+			VAR _CurrentQ=ROUNDUP(MONTH(_End)/3,0)
+			VAR _S=DATE(_Y,(_Q-1)*3+1,1)
+			VAR _E=IF(_Q=_CurrentQ,_End,EOMONTH(_S,2))
+			RETURN IF(_Q>_CurrentQ,BLANK(),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E)))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: 79bb4d22-6770-49c2-bc47-abe22d906b4b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Quarter Net Sales PY Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Y=YEAR(_End)-1
+			VAR _Q=VALUE(RIGHT(SELECTEDVALUE(DimDate[Quarter]),1))
+			VAR _CurrentQ=ROUNDUP(MONTH(_End)/3,0)
+			VAR _S=DATE(_Y,(_Q-1)*3+1,1)
+			VAR _Elapsed=DATEDIFF(DATE(YEAR(_End),(_CurrentQ-1)*3+1,1),_End,DAY)
+			VAR _E=IF(_Q=_CurrentQ,MIN(EOMONTH(_S,2),_S+_Elapsed),EOMONTH(_S,2))
+			RETURN IF(_Q>_CurrentQ || _S<[Data Min Date],BLANK(),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E)))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 7c50f093-72df-455e-8a1a-4a7863fce005
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Current Quarter Monthly Net Sales' =
+			VAR _End=[Context End Date]
+			VAR _Y=YEAR(_End)
+			VAR _Q=ROUNDUP(MONTH(_End)/3,0)
+			VAR _M=SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S=DATE(_Y,_M,1)
+			VAR _InQ=ROUNDUP(_M/3,0)=_Q
+			VAR _E=IF(_M=MONTH(_End),_End,EOMONTH(_S,0))
+			RETURN IF(_InQ,CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E)))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 017ac431-c5f4-4455-bc0c-10eb0137b459
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Year View Net Sales CY' =
+			VAR _End=[Context End Date]
+			VAR _M=SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S=DATE(YEAR(_End),_M,1)
+			VAR _E=IF(_M=MONTH(_End),_End,EOMONTH(_S,0))
+			RETURN CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E))
+		displayFolder: 01. Executive Overview
+		lineageTag: a28afbab-2b10-4cca-a397-896333a04116
+
+	measure 'Year View Net Sales PY' =
+			VAR _End=[Context End Date]
+			VAR _M=SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S=DATE(YEAR(_End)-1,_M,1)
+			VAR _E=IF(_M=MONTH(_End),DATE(YEAR(_End)-1,_M,DAY(_End)),EOMONTH(_S,0))
+			RETURN IF(_S<[Data Min Date],BLANK(),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 9adc10d6-5860-48de-8309-962f56e96990
+
+	measure 'Cancel Year View Rate CY' =
+			VAR _End=[Context End Date]
+			VAR _M=SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S=DATE(YEAR(_End),_M,1)
+			VAR _E=IF(_M=MONTH(_End),_End,EOMONTH(_S,0))
+			VAR _C=CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E))
+			VAR _G=CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E))
+			RETURN DIVIDE(_C,_G)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: d5115eb2-14e8-49ec-a309-748999905902
+
+	measure 'Cancel Year View Rate PY' =
+			VAR _End=[Context End Date]
+			VAR _M=SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S=DATE(YEAR(_End)-1,_M,1)
+			VAR _E=IF(_M=MONTH(_End),DATE(YEAR(_End)-1,_M,DAY(_End)),EOMONTH(_S,0))
+			VAR _C=CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E))
+			VAR _G=CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_S,_E))
+			RETURN IF(_S<[Data Min Date],BLANK(),DIVIDE(_C,_G))
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 5d39c326-e7b3-4bf7-86b5-c307c2c0edac
+
+	measure 'Orders Prior Quarter Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,2)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: eabea4ab-14ba-4e07-a00e-ffc9eaea3c69
+
+	measure 'Active Customers Prior Quarter Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,2)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Active Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: fe67fb67-3192-463d-ae03-99f7ac78a5b6
+
+	measure 'Net AOV Prior Quarter Comparable' = DIVIDE([Net Sales Prior Quarter Comparable],[Orders Prior Quarter Comparable])
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 0a8be362-d998-4a30-8570-0e852f5c1660
+
+	measure 'Cancelled Value Prior Quarter Comparable Final' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,2)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancelled Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 78e091cb-af13-49bd-9799-adf68cae2f3b
+
+	measure 'Gross Sales Prior Quarter Comparable Final' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,2)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 5e4dae3d-6764-4fd0-a167-8ba6eb1319fc
+
+	measure 'Cancellation Orders Prior Quarter Comparable Final' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _CurrentPeriodEnd=EOMONTH(_Start,2)
+			VAR _IsPartial=_End<_CurrentPeriodEnd
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancellation Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 0be01cea-9c1d-4dc8-a0a3-2c6a6a38ee2d
+
+	measure 'Cancellation Rate Prior Quarter Comparable' = DIVIDE([Cancelled Value Prior Quarter Comparable Final],[Gross Sales Prior Quarter Comparable Final])
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 52bed646-d9ab-4fe9-8cc3-b20b502fbaba
+
+	measure 'Average Cancelled Value per Order MTD' = DIVIDE([Cancelled Value MTD],[Cancellation Orders MTD])
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 8bda04f7-d4e5-4e2d-abe4-6ec003f0d211
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Average Cancelled Value per Order QTD' = DIVIDE([Cancelled Value QTD],[Cancellation Orders QTD])
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7e950b5b-1966-4f2b-be65-bcfea92cc5ea
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Average Cancelled Value per Order YTD' = DIVIDE([Cancelled Value YTD],[Cancellation Orders YTD])
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 8df47277-04a8-4f59-a0ad-9d022a89a572
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Selected Country Label' = IF(ISFILTERED(DimCountry[Country]), IF(HASONEVALUE(DimCountry[Country]), SELECTEDVALUE(DimCountry[Country]), "Multiple Countries"), IF(ISFILTERED(fact_sales[Country]), IF(HASONEVALUE(fact_sales[Country]), SELECTEDVALUE(fact_sales[Country]), "Multiple Countries"), "All Countries"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7c86a0d9-8e18-421e-a0ca-b2294d74f553
+
+	measure 'Context Label M' =
+			VAR _End=[Context End Date]
+			VAR _PrevStart=EDATE(DATE(YEAR(_End),MONTH(_End),1),-1)
+			VAR _PrevEnd=MIN(EOMONTH(_PrevStart,0),_PrevStart+DAY(_End)-1)
+			RETURN "Viewing " & FORMAT(_End,"MMM yyyy") & " through " & FORMAT(_End,"dd MMM") & " · compared with " & FORMAT(_PrevStart,"dd MMM") & "–" & FORMAT(_PrevEnd,"dd MMM yyyy") & " · " & [Selected Country Label]
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: e3bc849c-0b9d-40bc-9709-39f7f6a8e062
+
+	measure 'Context Label Q' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			VAR _IsPartial=_End<EOMONTH(_Start,2)
+			VAR _Elapsed=DATEDIFF(_Start,_End,DAY)
+			VAR _PS=EDATE(_Start,-3)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2))
+			VAR _Q="Q" & FORMAT(ROUNDUP(MONTH(_End)/3,0),"0") & " " & FORMAT(_End,"yyyy")
+			VAR _Comp=IF(_PS<[Data Min Date],"prior-quarter comparison unavailable", "compared with " & FORMAT(_PS,"dd MMM") & "–" & FORMAT(_PE,"dd MMM yyyy"))
+			RETURN "Viewing " & _Q & " through " & FORMAT(_End,"dd MMM") & " · " & _Comp & " · " & [Selected Country Label]
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: eec5883f-5246-4ec3-be46-3e8c1b9fee52
+
+	measure 'Context Label Y' =
+			VAR _End=[Context End Date]
+			VAR _PS=DATE(YEAR(_End)-1,1,1)
+			VAR _PE=IF(_End<DATE(YEAR(_End),12,31),DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31))
+			VAR _Comp=IF(_PS<[Data Min Date],"Foundational Baseline Year", "compared with 01 Jan–" & FORMAT(_PE,"dd MMM yyyy"))
+			RETURN "Viewing " & FORMAT(_End,"yyyy") & " through " & FORMAT(_End,"dd MMM") & " · " & _Comp & " · " & [Selected Country Label]
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 2e743f59-f026-4931-a550-2b57ff6ed181
+
+	measure 'Decision Focus M' =
+			VAR _Prior=[Net Sales Prior Month Comparable]
+			VAR _RatePP=([Cancellation Rate MTD]-[Cancellation Rate Prior Month Comparable])*100
+			VAR _CV=DIVIDE([Cancelled Value MTD]-[Cancelled Value Prior Month Comparable],[Cancelled Value Prior Month Comparable])
+			VAR _CO=DIVIDE([Cancellation Orders MTD]-[Cancellation Orders Prior Month Comparable],[Cancellation Orders Prior Month Comparable])
+			VAR _Orders=DIVIDE([Orders MTD]-[Orders Prior Month Comparable],[Orders Prior Month Comparable])
+			VAR _AOV=DIVIDE([Net AOV MTD]-[Net AOV Prior Month Comparable],[Net AOV Prior Month Comparable])
+			RETURN IF(ISBLANK(_Prior),"No comparable prior-month period is available.",SWITCH(TRUE(),_RatePP>=5&&ABS(_CO)<ABS(_CV)/3,"Cancelled value increased far faster than cancellation order count. Prioritize the highest-value cancelled orders and products for investigation.",_RatePP>=5,"Cancellation rate moved materially above the comparable prior month. Use Cancellation Analysis to locate timing and product concentration.",ABS(_Orders)>=0.03&&ABS(_AOV)<0.03,"Order volume changed while Net AOV stayed broadly stable, so the sales movement is more consistent with order volume than order value in this period.","No additional exception needs to be surfaced beyond the KPI cards and trend."))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 3b6a0c8e-6ca7-44e6-8274-28322353506b
+
+	measure 'Decision Focus Q' =
+			VAR _Prior=[Net Sales Prior Quarter Comparable]
+			VAR _RatePP=([Cancellation Rate QTD]-[Cancellation Rate Prior Quarter Comparable])*100
+			VAR _CV=DIVIDE([Cancelled Value QTD]-[Cancelled Value Prior Quarter Comparable Final],[Cancelled Value Prior Quarter Comparable Final])
+			VAR _CO=DIVIDE([Cancellation Orders QTD]-[Cancellation Orders Prior Quarter Comparable Final],[Cancellation Orders Prior Quarter Comparable Final])
+			VAR _Orders=DIVIDE([Orders QTD]-[Orders Prior Quarter Comparable],[Orders Prior Quarter Comparable])
+			VAR _AOV=DIVIDE([Net AOV QTD]-[Net AOV Prior Quarter Comparable],[Net AOV Prior Quarter Comparable])
+			RETURN IF(ISBLANK(_Prior),"No comparable prior-quarter period is available.",SWITCH(TRUE(),_RatePP>=5&&ABS(_CO)<ABS(_CV)/3,"Cancelled value increased far faster than cancellation order count. Prioritize the highest-value cancelled orders and products for investigation.",_RatePP>=5,"Cancellation rate moved materially above the comparable prior quarter. Use Cancellation Analysis to locate timing and product concentration.",ABS(_Orders)>=0.03&&ABS(_AOV)<0.03,"Order volume changed while Net AOV stayed broadly stable, so the sales movement is more consistent with order volume than order value in this period.","No additional exception needs to be surfaced beyond the KPI cards and trend."))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: b511686b-4b15-4eb9-b0e7-bbcb36b4a885
+
+	measure 'Decision Focus Y' =
+			VAR _End = [Context End Date]
+			VAR _Prior = [Net Sales PY YTD Comparable]
+			VAR _RatePP = ([Cancellation Rate YTD] - [Cancellation Rate PY YTD Comparable]) * 100
+			VAR _Orders = DIVIDE([Orders YTD] - [Orders PY YTD Comparable], [Orders PY YTD Comparable])
+			VAR _AOV = DIVIDE([Net AOV YTD] - [Net AOV PY YTD Comparable], [Net AOV PY YTD Comparable])
+			VAR _Sales = [Net Sales YTD]
+			VAR _OrdersCount = [Orders YTD]
+			VAR _SalesFormatted =
+				IF(
+					_Sales >= 1000000,
+					"£" & FORMAT(_Sales / 1000000, "0.00M"),
+					FORMAT(_Sales, "£#,0")
+				)
+			RETURN
+				IF(
+					ISBLANK(_Prior),
+					"FY" & FORMAT(_End, "yyyy") & " serves as the foundational operating baseline (" & _SalesFormatted & " Net Sales across " & FORMAT(_OrdersCount, "#,0") & " orders). YoY variance tracking activates in FY" & FORMAT(YEAR(_End) + 1, "0") & ".",
+					SWITCH(
+						TRUE(),
+						_RatePP >= 5, "Cancellation rate moved materially above the comparable prior year. Use Cancellation Analysis to locate timing and product concentration.",
+						ABS(_Orders) >= 0.03 && ABS(_AOV) < 0.03, "Order volume changed while Net AOV stayed broadly stable, so the sales movement is more consistent with order volume than order value in this period.",
+						"No additional exception needs to be surfaced beyond the KPI cards and trend."
+					)
+				)
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: c2f1564a-796f-4423-81bd-3c7ea856b4fd
+
+	measure 'Data Min Date' =
+			CALCULATE(
+			    MIN(fact_sales[InvoiceDate_Date]),
+			    REMOVEFILTERS()
+			)
+		formatString: dd MMM yyyy
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: a62f75af-0ff4-4cd7-8749-80d85a6fb767
+
+	measure 'Gross Sales Prior Month Comparable' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),MONTH(_End),1)
+			VAR _IsPartial=_End<EOMONTH(_Start,0)
+			VAR _PS=EDATE(_Start,-1)
+			VAR _PE=IF(_IsPartial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0))
+			RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Gross Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 29e7f872-d52a-47fd-a2ec-0a7afa268d33
+
+	measure 'Repeat Customers MTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Repeat Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),MONTH(_End),1),_End))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 6b607512-a94a-435e-a76c-aef770505da2
+
+	measure 'Repeat Customer Rate MTD' = DIVIDE([Repeat Customers MTD],[Active Customers MTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7293571e-5516-4b8e-9888-025173f9461c
+
+	measure 'Identified Customer Sales MTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Identified Customer Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),MONTH(_End),1),_End))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: d002df4f-0024-4c0f-ae4a-a6bb3aa13d5d
+
+	measure 'Customer Identification Coverage MTD' = DIVIDE([Identified Customer Sales MTD],[Net Sales MTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 6cf9bc17-50cb-4230-9689-8a59837e348f
+
+	measure 'Top 5 Customer Sales MTD' =
+			SUMX(
+				TOPN(
+					5,
+					FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+					[Net Sales MTD],
+					DESC
+				),
+				[Net Sales MTD]
+			)
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 4e6450eb-c23d-4f95-84f1-40de125de354
+
+	measure 'Top 5 Customer Revenue Share MTD' = DIVIDE([Top 5 Customer Sales MTD],[Identified Customer Sales MTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 00ea0113-e61f-4cd3-a22b-b15605b4d09d
+
+	measure 'Repeat Customers QTD' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Repeat Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_Start,_End))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 17ef1bd9-426f-4431-a043-f5cf6356eb71
+
+	measure 'Repeat Customer Rate QTD' = DIVIDE([Repeat Customers QTD],[Active Customers QTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: a91ddb1a-0990-47b0-8a6f-f85212f5c157
+
+	measure 'Identified Customer Sales QTD' =
+			VAR _End=[Context End Date]
+			VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1)
+			RETURN CALCULATE([Identified Customer Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_Start,_End))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 2792c7c1-13d5-4ecf-979e-0fcb9095460d
+
+	measure 'Customer Identification Coverage QTD' = DIVIDE([Identified Customer Sales QTD],[Net Sales QTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: c5bb9dd6-ed0f-4306-8da8-b688792b764e
+
+	measure 'Top 5 Customer Sales QTD' =
+			SUMX(
+				TOPN(
+					5,
+					FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+					[Net Sales QTD],
+					DESC
+				),
+				[Net Sales QTD]
+			)
+		displayFolder: 02. Customer Intelligence
+		lineageTag: a4b59b02-4939-4deb-80f3-de7560875dcb
+
+	measure 'Top 5 Customer Revenue Share QTD' = DIVIDE([Top 5 Customer Sales QTD],[Identified Customer Sales QTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 0157d228-28ff-4d25-8b07-f56df196c3bf
+
+	measure 'Repeat Customers YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Repeat Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 1f7f579b-6c74-4d87-a2d8-0e074946b6d6
+
+	measure 'Repeat Customer Rate YTD' = DIVIDE([Repeat Customers YTD],[Active Customers YTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: a31acf90-511b-4fa0-96bc-b4051aace6f6
+
+	measure 'Identified Customer Sales YTD' =
+			VAR _End=[Context End Date]
+			RETURN CALCULATE([Identified Customer Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],DATE(YEAR(_End),1,1),_End))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 593c9ac9-7530-4ebd-bee7-c310dafea2ff
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Customer Identification Coverage YTD' = DIVIDE([Identified Customer Sales YTD],[Net Sales YTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 1b4603ca-57ab-4a36-8d8e-01997a3f2be1
+
+	measure 'Top 5 Customer Sales YTD' =
+			SUMX(
+				TOPN(
+					5,
+					FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+					[Net Sales YTD],
+					DESC
+				),
+				[Net Sales YTD]
+			)
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 0c39927a-8210-4bc1-871b-4dbc3fd5a0e8
+
+	measure 'Top 5 Customer Revenue Share YTD' = DIVIDE([Top 5 Customer Sales YTD],[Identified Customer Sales YTD])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: f6578235-015b-45ac-8177-a56523dec015
+
+	measure 'Customer Summary M' = FORMAT([Customer Identification Coverage MTD],"0.0%") & " of Net Sales is linked to identified customers. " & FORMAT([Repeat Customer Rate MTD],"0.0%") & " of active identified customers placed 2+ active orders in this monthly context."
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 60379d3a-88e8-4682-a606-6a20de0ff23c
+
+	measure 'Customer Summary Q' = FORMAT([Customer Identification Coverage QTD],"0.0%") & " of Net Sales is linked to identified customers. " & FORMAT([Repeat Customer Rate QTD],"0.0%") & " of active identified customers placed 2+ active orders in this quarterly context."
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 1cf61e4c-ddcf-4b49-9257-058a97a95d08
+
+	measure 'Customer Summary Y' = FORMAT([Customer Identification Coverage YTD],"0.0%") & " of Net Sales is linked to identified customers. " & FORMAT([Repeat Customer Rate YTD],"0.0%") & " of active identified customers placed 2+ active orders in this yearly context."
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 88dcde87-7e6a-46af-82c2-672a936bb055
+
+	measure 'Ref M Net Sales' = VAR _P=[Net Sales Prior Month Comparable] VAR _D=DIVIDE([Net Sales MTD]-[Net Sales Prior Month Comparable],[Net Sales Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 5b98055d-29c2-4093-90dc-ff976c4a41d2
+
+	measure 'Ref M Gross Sales' = VAR _P=[Gross Sales Prior Month Comparable] VAR _D=DIVIDE([Gross Sales MTD]-[Gross Sales Prior Month Comparable],[Gross Sales Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 9f084a50-78ee-4ddb-978a-b6dd07d0572c
+
+	measure 'Ref M Orders' = VAR _P=[Orders Prior Month Comparable] VAR _D=DIVIDE([Orders MTD]-[Orders Prior Month Comparable],[Orders Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 01. Executive Overview
+		lineageTag: a346cb39-f534-4beb-b63a-1ae5d25c35e4
+
+	measure 'Ref M Active Customers' = VAR _P=[Active Customers Prior Month Comparable] VAR _D=DIVIDE([Active Customers MTD]-[Active Customers Prior Month Comparable],[Active Customers Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: e5ab1a70-cc24-4820-9877-dff13544bb64
+
+	measure 'Ref M Net AOV' = VAR _P=[Net AOV Prior Month Comparable] VAR _D=DIVIDE([Net AOV MTD]-[Net AOV Prior Month Comparable],[Net AOV Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 01. Executive Overview
+		lineageTag: d3b03755-2562-4273-8859-f544b8f7dacf
+
+	measure 'Ref Q Net Sales' = VAR _P=[Net Sales Prior Quarter Comparable] VAR _D=DIVIDE([Net Sales QTD]-[Net Sales Prior Quarter Comparable],[Net Sales Prior Quarter Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 15658dd4-3e2e-45ab-92d8-294613647c20
+
+	measure 'Ref Q Gross Sales' = VAR _P=[Gross Sales Prior Quarter Comparable Final] VAR _D=DIVIDE([Gross Sales QTD]-[Gross Sales Prior Quarter Comparable Final],[Gross Sales Prior Quarter Comparable Final]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: c6e809b7-304a-4736-9122-970a7fb66b78
+
+	measure 'Ref Q Orders' = VAR _P=[Orders Prior Quarter Comparable] VAR _D=DIVIDE([Orders QTD]-[Orders Prior Quarter Comparable],[Orders Prior Quarter Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 601f08bc-0b7f-4b77-8f5c-3dcc90723201
+
+	measure 'Ref Q Active Customers' = VAR _P=[Active Customers Prior Quarter Comparable] VAR _D=DIVIDE([Active Customers QTD]-[Active Customers Prior Quarter Comparable],[Active Customers Prior Quarter Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 24ed85e7-5a26-4424-818d-6938478edd57
+
+	measure 'Ref Q Net AOV' = VAR _P=[Net AOV Prior Quarter Comparable] VAR _D=DIVIDE([Net AOV QTD]-[Net AOV Prior Quarter Comparable],[Net AOV Prior Quarter Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 22505d27-f184-4cf9-a531-2eec8e0351e6
+
+	measure 'Ref Y Net Sales' = VAR _P=[Net Sales PY YTD Comparable] VAR _D=DIVIDE([Net Sales YTD]-[Net Sales PY YTD Comparable],[Net Sales PY YTD Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 3af0323a-33e3-4bdb-980c-4559758368eb
+
+	measure 'Ref Y Gross Sales' = VAR _P=[Gross Sales PY YTD Comparable] VAR _D=DIVIDE([Gross Sales YTD]-[Gross Sales PY YTD Comparable],[Gross Sales PY YTD Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: e90950a6-1244-431b-8baa-bdd8d8fddeb4
+
+	measure 'Ref Y Orders' = VAR _P=[Orders PY YTD Comparable] VAR _D=DIVIDE([Orders YTD]-[Orders PY YTD Comparable],[Orders PY YTD Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: ecf7ca8d-e23a-4608-a179-bdaff86bfdc4
+
+	measure 'Ref Y Active Customers' = VAR _P=[Active Customers PY YTD Comparable] VAR _D=DIVIDE([Active Customers YTD]-[Active Customers PY YTD Comparable],[Active Customers PY YTD Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 0857c92a-e8ef-45fc-b579-4a138c5ed6d9
+
+	measure 'Ref Y Net AOV' = VAR _P=[Net AOV PY YTD Comparable] VAR _D=DIVIDE([Net AOV YTD]-[Net AOV PY YTD Comparable],[Net AOV PY YTD Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 01. Executive Overview
+		lineageTag: 538a6a15-e3ec-4571-8861-52f1a6458f54
+
+	measure 'Prior M Repeat Customers' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),MONTH(_End),1) VAR _Partial=_End<EOMONTH(_Start,0) VAR _PS=EDATE(_Start,-1) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Repeat Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 5c31c9b1-01df-4245-b036-1ad1b03df772
+
+	measure 'Prior M Identified Customer Sales' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),MONTH(_End),1) VAR _Partial=_End<EOMONTH(_Start,0) VAR _PS=EDATE(_Start,-1) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Identified Customer Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 09252e0b-deee-45e5-bf8d-d0bf8224443b
+
+	measure 'Prior M Top 5 Customer Sales' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),MONTH(_End),1) VAR _Partial=_End<EOMONTH(_Start,0) VAR _PS=EDATE(_Start,-1) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0)) VAR _T=TOPN(5,FILTER(ALLSELECTED(DimCustomer[CustomerID]),NOT ISBLANK(DimCustomer[CustomerID])),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)),DESC) RETURN IF(_PS<[Data Min Date],BLANK(),SUMX(_T,CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE))))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 48a56557-b130-4694-804d-b7c1e0f6d089
+
+	measure 'Ref Cust M Repeat Customers' = VAR _P=[Prior M Repeat Customers] VAR _D=DIVIDE([Repeat Customers MTD]-[Prior M Repeat Customers],[Prior M Repeat Customers]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 77e61fb6-1903-4d1f-b40f-13e513e923be
+
+	measure 'Ref Cust M Repeat Rate' = VAR _P=DIVIDE([Prior M Repeat Customers],[Active Customers Prior Month Comparable]) VAR _D=([Repeat Customer Rate MTD]-DIVIDE([Prior M Repeat Customers],[Active Customers Prior Month Comparable]))*100 RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0;-0.0;0.0") & " pp" & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: eacb687b-fd84-4a45-a3c6-1ad64c36eb28
+
+	measure 'Ref Cust M Coverage' = VAR _P=DIVIDE([Prior M Identified Customer Sales],[Net Sales Prior Month Comparable]) VAR _D=([Customer Identification Coverage MTD]-DIVIDE([Prior M Identified Customer Sales],[Net Sales Prior Month Comparable]))*100 RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0;-0.0;0.0") & " pp" & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 357ba4f9-407d-4d9b-b66d-5fdecc4baad9
+
+	measure 'Ref Cust M Top5 Share' = VAR _P=DIVIDE([Prior M Top 5 Customer Sales],[Prior M Identified Customer Sales]) VAR _D=([Top 5 Customer Revenue Share MTD]-DIVIDE([Prior M Top 5 Customer Sales],[Prior M Identified Customer Sales]))*100 RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0;-0.0;0.0") & " pp" & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 967756fb-e3bf-4400-a237-8e6da8dbc812
+
+	measure 'Prior Q Repeat Customers' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1) VAR _Partial=_End<EOMONTH(_Start,2) VAR _Elapsed=DATEDIFF(_Start,_End,DAY) VAR _PS=EDATE(_Start,-3) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Repeat Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: fc3e290b-7bea-4ee6-a648-6907e1630a0b
+
+	measure 'Prior Q Identified Customer Sales' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1) VAR _Partial=_End<EOMONTH(_Start,2) VAR _Elapsed=DATEDIFF(_Start,_End,DAY) VAR _PS=EDATE(_Start,-3) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Identified Customer Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: fe0a4b23-df7f-4525-afab-1c17d0ee938f
+
+	measure 'Prior Q Top 5 Customer Sales' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1) VAR _Partial=_End<EOMONTH(_Start,2) VAR _Elapsed=DATEDIFF(_Start,_End,DAY) VAR _PS=EDATE(_Start,-3) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2)) VAR _T=TOPN(5,FILTER(ALLSELECTED(DimCustomer[CustomerID]),NOT ISBLANK(DimCustomer[CustomerID])),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)),DESC) RETURN IF(_PS<[Data Min Date],BLANK(),SUMX(_T,CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE))))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: d5e94604-7757-486c-be9f-ad91699220af
+
+	measure 'Prior Y Repeat Customers' = VAR _End=[Context End Date] VAR _Partial=_End<DATE(YEAR(_End),12,31) VAR _PS=DATE(YEAR(_End)-1,1,1) VAR _PE=IF(_Partial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Repeat Customers],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 60148f01-234b-4ad5-8723-b8533164926a
+
+	measure 'Prior Y Identified Customer Sales' = VAR _End=[Context End Date] VAR _Partial=_End<DATE(YEAR(_End),12,31) VAR _PS=DATE(YEAR(_End)-1,1,1) VAR _PE=IF(_Partial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Identified Customer Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 2f8d2ced-35a9-4362-ae7b-ba1396cf33ca
+
+	measure 'Prior Y Top 5 Customer Sales' = VAR _End=[Context End Date] VAR _Partial=_End<DATE(YEAR(_End),12,31) VAR _PS=DATE(YEAR(_End)-1,1,1) VAR _PE=IF(_Partial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31)) VAR _T=TOPN(5,FILTER(ALLSELECTED(DimCustomer[CustomerID]),NOT ISBLANK(DimCustomer[CustomerID])),CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)),DESC) RETURN IF(_PS<[Data Min Date],BLANK(),SUMX(_T,CALCULATE([Net Sales],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE))))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: a47593ee-da4b-41df-962c-523c0d9123d0
+
+	measure 'Prior M Cancelled Merchandise' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),MONTH(_End),1) VAR _Partial=_End<EOMONTH(_Start,0) VAR _PS=EDATE(_Start,-1) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,0),_PS+DAY(_End)-1),EOMONTH(_PS,0)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancelled Merchandise Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 45b1ac5e-1c17-409d-98ef-d3d4f2b4064f
+
+	measure 'Ref Can M Cancelled Value' = VAR _P=[Cancelled Value Prior Month Comparable] VAR _D=DIVIDE([Cancelled Value MTD]-[Cancelled Value Prior Month Comparable],[Cancelled Value Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: cf9fcdab-2aa1-467e-aa2b-d8a677bfe0cd
+
+	measure 'Ref Can M Cancellation Rate' = VAR _P=DIVIDE([Cancelled Value Prior Month Comparable],[Gross Sales Prior Month Comparable]) VAR _D=([Cancellation Rate MTD]-DIVIDE([Cancelled Value Prior Month Comparable],[Gross Sales Prior Month Comparable]))*100 RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0;-0.0;0.0") & " pp" & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: aa44e5f3-06c0-484f-b3e4-182685b901c3
+
+	measure 'Ref Can M Cancellation Orders' = VAR _P=[Cancellation Orders Prior Month Comparable] VAR _D=DIVIDE([Cancellation Orders MTD]-[Cancellation Orders Prior Month Comparable],[Cancellation Orders Prior Month Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7962daf5-1f3e-4bfd-889f-2236de09bee4
+
+	measure 'Ref Can M Cancelled Merchandise' = VAR _P=[Prior M Cancelled Merchandise] VAR _D=DIVIDE([Cancelled Merchandise MTD]-[Prior M Cancelled Merchandise],[Prior M Cancelled Merchandise]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 442fce61-adbf-4701-878c-7163827d43f2
+
+	measure 'Ref Can M Avg Cancel Value' = VAR _P=DIVIDE([Cancelled Value Prior Month Comparable],[Cancellation Orders Prior Month Comparable]) VAR _D=DIVIDE([Average Cancelled Value per Order MTD]-DIVIDE([Cancelled Value Prior Month Comparable],[Cancellation Orders Prior Month Comparable]),DIVIDE([Cancelled Value Prior Month Comparable],[Cancellation Orders Prior Month Comparable])) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(EDATE(DATE(YEAR([Context End Date]),MONTH([Context End Date]),1),-1),"MMM"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: a56d67fd-7a96-482a-8a76-0b685f7c57a0
+
+	measure 'Prior Q Cancelled Merchandise' = VAR _End=[Context End Date] VAR _Start=DATE(YEAR(_End),(ROUNDUP(MONTH(_End)/3,0)-1)*3+1,1) VAR _Partial=_End<EOMONTH(_Start,2) VAR _Elapsed=DATEDIFF(_Start,_End,DAY) VAR _PS=EDATE(_Start,-3) VAR _PE=IF(_Partial,MIN(EOMONTH(_PS,2),_PS+_Elapsed),EOMONTH(_PS,2)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancelled Merchandise Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 57694903-5930-479d-94e3-16e04a8a300f
+
+	measure 'Ref Can Q Cancelled Value' = VAR _P=[Cancelled Value Prior Quarter Comparable Final] VAR _D=DIVIDE([Cancelled Value QTD]-[Cancelled Value Prior Quarter Comparable Final],[Cancelled Value Prior Quarter Comparable Final]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7c0de9fd-70fc-4813-a221-9bc4a27f3870
+
+	measure 'Ref Can Q Cancellation Rate' = VAR _P=DIVIDE([Cancelled Value Prior Quarter Comparable Final],[Gross Sales Prior Quarter Comparable Final]) VAR _D=([Cancellation Rate QTD]-DIVIDE([Cancelled Value Prior Quarter Comparable Final],[Gross Sales Prior Quarter Comparable Final]))*100 RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0;-0.0;0.0") & " pp" & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 811f1072-6ff7-4d93-95b5-c36f901c6805
+
+	measure 'Ref Can Q Cancellation Orders' = VAR _P=[Cancellation Orders Prior Quarter Comparable Final] VAR _D=DIVIDE([Cancellation Orders QTD]-[Cancellation Orders Prior Quarter Comparable Final],[Cancellation Orders Prior Quarter Comparable Final]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 28f9ecfb-506e-4cb3-b8d3-88799f8b695c
+
+	measure 'Ref Can Q Cancelled Merchandise' = VAR _P=[Prior Q Cancelled Merchandise] VAR _D=DIVIDE([Cancelled Merchandise QTD]-[Prior Q Cancelled Merchandise],[Prior Q Cancelled Merchandise]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: ebf718c6-b8e6-42ab-b73c-9f4e1670bd11
+
+	measure 'Ref Can Q Avg Cancel Value' = VAR _P=DIVIDE([Cancelled Value Prior Quarter Comparable Final],[Cancellation Orders Prior Quarter Comparable Final]) VAR _D=DIVIDE([Average Cancelled Value per Order QTD]-DIVIDE([Cancelled Value Prior Quarter Comparable Final],[Cancellation Orders Prior Quarter Comparable Final]),DIVIDE([Cancelled Value Prior Quarter Comparable Final],[Cancellation Orders Prior Quarter Comparable Final])) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable Q" & FORMAT(IF(ROUNDUP(MONTH([Context End Date])/3,0)=1,4,ROUNDUP(MONTH([Context End Date])/3,0)-1),"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 20c74175-0273-44e2-a524-24106288900c
+
+	measure 'Prior Y Cancellation Orders' = VAR _End=[Context End Date] VAR _Partial=_End<DATE(YEAR(_End),12,31) VAR _PS=DATE(YEAR(_End)-1,1,1) VAR _PE=IF(_Partial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancellation Orders],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 2336d151-0608-45ee-8b50-e3f7654d72b9
+
+	measure 'Prior Y Cancelled Merchandise' = VAR _End=[Context End Date] VAR _Partial=_End<DATE(YEAR(_End),12,31) VAR _PS=DATE(YEAR(_End)-1,1,1) VAR _PE=IF(_Partial,DATE(YEAR(_End)-1,MONTH(_End),DAY(_End)),DATE(YEAR(_End)-1,12,31)) RETURN IF(_PS<[Data Min Date],BLANK(),CALCULATE([Cancelled Merchandise Values],REMOVEFILTERS(DimDate),DATESBETWEEN(DimDate[Date],_PS,_PE)))
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 66675237-e595-41db-8339-9e65c22ccdfa
+
+	measure 'Ref Can Y Cancelled Value' = VAR _P=[Cancelled Value PY YTD Comparable] VAR _D=DIVIDE([Cancelled Value YTD]-[Cancelled Value PY YTD Comparable],[Cancelled Value PY YTD Comparable]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: ca1e261b-4163-4048-bb79-4e32815b8b3f
+
+	measure 'Ref Can Y Cancellation Rate' = VAR _P=DIVIDE([Cancelled Value PY YTD Comparable],[Gross Sales PY YTD Comparable]) VAR _D=([Cancellation Rate YTD]-DIVIDE([Cancelled Value PY YTD Comparable],[Gross Sales PY YTD Comparable]))*100 RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0;-0.0;0.0") & " pp" & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 2d4f0bd9-4c5f-400c-adad-f1ce960b627a
+
+	measure 'Ref Can Y Cancellation Orders' = VAR _P=[Prior Y Cancellation Orders] VAR _D=DIVIDE([Cancellation Orders YTD]-[Prior Y Cancellation Orders],[Prior Y Cancellation Orders]) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: e241ab1e-595e-44d6-8333-2e9bb6aab2b9
+
+	measure 'Ref Can Y Avg Cancel Value' = VAR _P=DIVIDE([Cancelled Value PY YTD Comparable],[Prior Y Cancellation Orders]) VAR _D=DIVIDE([Average Cancelled Value per Order YTD]-DIVIDE([Cancelled Value PY YTD Comparable],[Prior Y Cancellation Orders]),DIVIDE([Cancelled Value PY YTD Comparable],[Prior Y Cancellation Orders])) RETURN IF(ISBLANK(_P),"Comparison unavailable",FORMAT(_D,"+0.0%;-0.0%;0.0%") & " vs " & "comparable " & FORMAT(YEAR([Context End Date])-1,"0"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 67c0827a-740e-445a-91a6-29eee865076b
+
+	measure 'Snapshot MoM Net Sales' =
+			
+			VAR _D = DIVIDE([Net Sales MTD] - [Net Sales Prior Month Comparable], [Net Sales Prior Month Comparable])
+			RETURN IF(ISBLANK(_D), "Base Month", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 85f806bd-15e8-4ff9-8eee-74351625bde6
+
+	measure 'Snapshot MoM Orders' =
+			
+			VAR _D = DIVIDE([Orders MTD] - [Orders Prior Month Comparable], [Orders Prior Month Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Orders MTD], "#,0") & " orders", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: cfdac996-59bf-442c-98bb-daa37f0c7651
+
+	measure 'Snapshot MoM Customers' =
+			
+			VAR _D = DIVIDE([Active Customers MTD] - [Active Customers Prior Month Comparable], [Active Customers Prior Month Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Active Customers MTD], "#,0") & " accounts", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: cfecca20-f605-4fae-8b4d-641508532248
+
+	measure 'Snapshot MoM AOV' =
+			
+			VAR _D = DIVIDE([Net AOV MTD] - [Net AOV Prior Month Comparable], [Net AOV Prior Month Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Net AOV MTD], "£#,0.00") & " / order", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 8d8b4d8c-2f96-4c97-9f08-d06a7455b7ae
+
+	measure 'Snapshot QoQ Orders' =
+			
+			VAR _D = DIVIDE([Orders QTD] - [Orders Prior Quarter Comparable], [Orders Prior Quarter Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Orders QTD], "#,0") & " orders", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: bcc8dfd0-0b65-4962-acad-64ecdc798d51
+
+	measure 'Snapshot QoQ Customers' =
+			
+			VAR _D = DIVIDE([Active Customers QTD] - [Active Customers Prior Quarter Comparable], [Active Customers Prior Quarter Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Active Customers QTD], "#,0") & " accounts", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 221a2a45-274e-4578-b0c9-8718ff148cd6
+
+	measure 'Snapshot QoQ AOV' =
+			
+			VAR _D = DIVIDE([Net AOV QTD] - [Net AOV Prior Quarter Comparable], [Net AOV Prior Quarter Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Net AOV QTD], "£#,0.00") & " / order", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 1f5150c5-d941-43a9-bd7d-2431de6d1823
+
+	measure 'Snapshot QoQ Net Sales' =
+			
+			VAR _D = DIVIDE([Net Sales QTD] - [Net Sales Prior Quarter Comparable], [Net Sales Prior Quarter Comparable])
+			RETURN IF(ISBLANK(_D), "Base Quarter", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: cbdd0817-2dba-4604-98ed-4fd16d518264
+
+	measure 'Quarter Net Sales YoY Variance' =
+			
+			[Quarter Net Sales Latest Year] - [Quarter Net Sales PY Comparable]
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: f883ddd8-b5a2-4fc8-b63f-739d0b0b2edf
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Snapshot YoY Net Sales' =
+			
+			VAR _D = DIVIDE([Net Sales YTD] - [Net Sales PY YTD Comparable], [Net Sales PY YTD Comparable])
+			RETURN IF(ISBLANK(_D), "Baseline Year", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: a5242ccb-fbf8-4493-9d43-68a4440e9ba6
+
+	measure 'Snapshot YoY Orders' =
+			
+			VAR _D = DIVIDE([Orders YTD] - [Orders PY YTD Comparable], [Orders PY YTD Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Orders YTD], "#,0") & " orders", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 6a33ac74-a3b7-4c21-9b16-b4bd8f3cea17
+
+	measure 'Snapshot YoY Customers' =
+			
+			VAR _D = DIVIDE([Active Customers YTD] - [Active Customers PY YTD Comparable], [Active Customers PY YTD Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Active Customers YTD], "#,0") & " accounts", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 06bd8eea-7ebf-4c22-9dba-bbebeeb2523f
+
+	measure 'Snapshot YoY AOV' =
+			
+			VAR _D = DIVIDE([Net AOV YTD] - [Net AOV PY YTD Comparable], [Net AOV PY YTD Comparable])
+			RETURN IF(ISBLANK(_D), FORMAT([Net AOV YTD], "£#,0.00") & " / order", FORMAT(_D, "+0.0%;-0.0%;0.0%"))
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: ca8967b6-9134-4af6-bd33-9f1e7334c771
+
+	measure 'VIP Customer Rank Badge' =
+			IF(
+			    NOT HASONEVALUE(DimCustomer[CustomerID]) || ISBLANK([Customer Active Net Sales]),
+			    BLANK(),
+			    "#" & FORMAT(
+			        RANKX(
+			            ALLSELECTED(DimCustomer[CustomerID]),
+			            [Customer Active Net Sales],
+			            ,
+			            DESC,
+			            Dense
+			        ),
+			        "0"
+			    )
+			)
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 125df547-16f2-4117-b964-e8a2b272f572
+
+	measure 'Customer Active Net Sales' =
+			
+			SWITCH(
+			    TRUE(),
+			    ISFILTERED(PeriodQuarter[PeriodLabel]), [Net Sales QTD],
+			    ISFILTERED(PeriodYear[Year]), [Net Sales YTD],
+			    [Net Sales MTD]
+			)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 35166946-f08f-45c6-8779-4cad73ee0782
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Customer Active Orders' =
+			
+			SWITCH(
+			    TRUE(),
+			    ISFILTERED(PeriodQuarter[PeriodLabel]), [Orders QTD],
+			    ISFILTERED(PeriodYear[Year]), [Orders YTD],
+			    [Orders MTD]
+			)
+		formatString: 0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 6e8ae63c-ea42-4e9c-9269-a038c1cef3e7
+
+	measure 'Top Market Rank Badge' = ```
+			
+			VAR _CurrentSales = [Customer Active Net Sales]
+			VAR _RankingTable = 
+			    CALCULATETABLE(
+			        VALUES(DimCountry[Country]),
+			        ALLSELECTED(DimCountry[Country]),
+			        REMOVEFILTERS(DimCountry[MarketName], DimCountry[FlagURL])
+			    )
+			RETURN
+			    IF(
+			        ISBLANK(_CurrentSales),
+			        BLANK(),
+			        "#" & FORMAT(
+			            RANKX(
+			                _RankingTable,
+			                CALCULATE(
+			                    [Customer Active Net Sales],
+			                    REMOVEFILTERS(DimCountry[MarketName], DimCountry[FlagURL])
+			                ),
+			                _CurrentSales,
+			                DESC,
+			                Dense
+			            ),
+			            "0"
+			        )
+			    )
+			```
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 5a5dc640-d534-48a2-816f-79b43a6b76a0
+
+	measure 'Top Market Share %' = ```
+			
+			VAR _CurrentSales = [Customer Active Net Sales]
+			VAR _TotalSales = 
+			    CALCULATE(
+			        [Customer Active Net Sales],
+			        ALLSELECTED(DimCountry[Country]),
+			        REMOVEFILTERS(DimCountry[MarketName], DimCountry[FlagURL])
+			    )
+			RETURN
+			    DIVIDE(_CurrentSales, _TotalSales)
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 01. Executive Overview
+		lineageTag: ece98d2e-5e91-406b-9618-138adda0f641
+
+	measure 'Customer Diagnostic Narrative' = ```
+			
+			VAR _IsQuarter = ISFILTERED(PeriodQuarter[PeriodLabel])
+			VAR _IsYear = ISFILTERED(PeriodYear[Year])
+			
+			VAR _Coverage = 
+			    SWITCH(
+			        TRUE(),
+			        _IsQuarter, [Customer Identification Coverage QTD],
+			        _IsYear, [Customer Identification Coverage YTD],
+			        [Customer Identification Coverage MTD]
+			    )
+			
+			VAR _RepeatRate = 
+			    SWITCH(
+			        TRUE(),
+			        _IsQuarter, [Repeat Customer Rate QTD],
+			        _IsYear, [Repeat Customer Rate YTD],
+			        [Repeat Customer Rate MTD]
+			    )
+			
+			VAR _RepeatCust = 
+			    SWITCH(
+			        TRUE(),
+			        _IsQuarter, [Repeat Customers QTD],
+			        _IsYear, [Repeat Customers YTD],
+			        [Repeat Customers MTD]
+			    )
+			
+			VAR _Top5Share = 
+			    SWITCH(
+			        TRUE(),
+			        _IsQuarter, [Top 5 Customer Revenue Share QTD],
+			        _IsYear, [Top 5 Customer Revenue Share YTD],
+			        [Top 5 Customer Revenue Share MTD]
+			    )
+			
+			RETURN
+			    "• Identification Coverage: " & FORMAT(_Coverage, "0.0%") & " of Net sales is linked to identified customers." & UNICHAR(10) & UNICHAR(10) &
+			    "• Repeat Activity: " & FORMAT(_RepeatCust, "#,0") & " customers placed more than 1 order, representing " & FORMAT(_RepeatRate, "0.0%") & " of active identified customers." & UNICHAR(10) & UNICHAR(10) &
+			    "• Customer Concentration: Top 5 customers account for " & FORMAT(_Top5Share, "0.0%") & " of identified customer revenue in the selected period"
+			```
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 6d7419a0-631c-4147-b14d-12b9261e26b0
+
+	measure 'VIP Customer Country' =
+			IF(
+			    NOT HASONEVALUE(DimCustomer[CustomerID]),
+			    "Top 5 Total",
+			    VAR _C =
+			        CALCULATE(
+			            SELECTEDVALUE(fact_sales[Country]),
+			            fact_sales[TransactionStatus] = "Active"
+			        )
+			    RETURN
+			        IF(_C = "United Kingdom", "UK", COALESCE(_C, "Unknown"))
+			)
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 5b7e9a21-8c34-4b56-91e8-782a1d2f9a01
+
+	measure 'Customer Segment Sales' = ```
+			VAR _CurrentSegment = SELECTEDVALUE(DimCustomerSegment[SegmentName])
+				
+				-- 1. Total Identified sales in current filter context
+				VAR _TotalIdentified = 
+				    CALCULATE(
+				        [Customer Active Net Sales],
+				        fact_sales[IsIdentifiedCustomer] = TRUE()
+				    )
+				    
+				-- 2. Guest Checkout sales in current filter context
+				VAR _GuestCheckout = 
+				    CALCULATE(
+				        [Customer Active Net Sales],
+				        fact_sales[IsIdentifiedCustomer] = FALSE()
+				    )
+				    
+				-- 3. Top 5 VIP sales in current filter context
+				VAR _Top5Table = 
+				    TOPN(
+				        5,
+				        FILTER(
+				            VALUES(DimCustomer[CustomerID]),
+				            NOT ISBLANK(DimCustomer[CustomerID])
+				        ),
+				        [Customer Active Net Sales],
+				        DESC
+				    )
+				VAR _Top5Sales = 
+				    CALCULATE(
+				        [Customer Active Net Sales],
+				        KEEPFILTERS(_Top5Table)
+				    )
+				    
+				-- 4. Core Base sales
+				VAR _CoreBaseSales = MAX(0, _TotalIdentified - _Top5Sales)
+				
+				RETURN
+				    IF(
+				        ISINSCOPE(DimCustomerSegment[SegmentName]),
+				        SWITCH(
+				            _CurrentSegment,
+				            "Core Identified Customers", _CoreBaseSales,
+				            "Top 5 Customers", _Top5Sales,
+				            "Unidentified Customer Sales", _GuestCheckout,
+				            BLANK()
+				        ),
+				        [Customer Active Net Sales]
+				    )
+			```
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 9a8b7c6d-5e4f-3a2b-1c0d-987654321fed
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'New Customers QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Active Customers],
+					NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+					DimCustomer[FirstPurchaseDate] >= _Start,
+					DimCustomer[FirstPurchaseDate] <= _End,
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340001
+
+	measure 'Returning Customers QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Active Customers],
+					NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+					DimCustomer[FirstPurchaseDate] < _Start,
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340002
+
+	measure 'Orders per Active Customer QTD' = DIVIDE([Identified Orders QTD], [Active Customers QTD], 0)
+		formatString: 0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340003
+
+	measure 'New Customer Net Sales QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Net Sales],
+					NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+					DimCustomer[FirstPurchaseDate] >= _Start,
+					DimCustomer[FirstPurchaseDate] <= _End,
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340004
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Returning Customer Net Sales QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Net Sales],
+					NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+					DimCustomer[FirstPurchaseDate] < _Start,
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340005
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'New Customer Orders QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Orders],
+					NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+					DimCustomer[FirstPurchaseDate] >= _Start,
+					DimCustomer[FirstPurchaseDate] <= _End,
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340006
+
+	measure 'Returning Customer Orders QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Orders],
+					NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+					DimCustomer[FirstPurchaseDate] < _Start,
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340007
+
+	measure 'New Customer AOV QTD' = DIVIDE([New Customer Net Sales QTD], [New Customer Orders QTD], 0)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340008
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Returning Customer AOV QTD' = DIVIDE([Returning Customer Net Sales QTD], [Returning Customer Orders QTD], 0)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340009
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'New Customers Month QTD' =
+			VAR _End = [Context End Date]
+			VAR _Y = YEAR(_End)
+			VAR _Q = ROUNDUP(MONTH(_End)/3, 0)
+			VAR _M = SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S = DATE(_Y, _M, 1)
+			VAR _InQ = ROUNDUP(_M/3, 0) = _Q
+			VAR _E = IF(_M = MONTH(_End), _End, EOMONTH(_S, 0))
+			RETURN
+				IF(
+					_InQ,
+					CALCULATE(
+						[Active Customers],
+						NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+						DimCustomer[FirstPurchaseDate] >= _S,
+						DimCustomer[FirstPurchaseDate] <= _E,
+						REMOVEFILTERS(DimDate),
+						DATESBETWEEN(DimDate[Date], _S, _E)
+					)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340010
+
+	measure 'Returning Customers Month QTD' =
+			VAR _End = [Context End Date]
+			VAR _Y = YEAR(_End)
+			VAR _Q = ROUNDUP(MONTH(_End)/3, 0)
+			VAR _M = SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S = DATE(_Y, _M, 1)
+			VAR _InQ = ROUNDUP(_M/3, 0) = _Q
+			VAR _E = IF(_M = MONTH(_End), _End, EOMONTH(_S, 0))
+			RETURN
+				IF(
+					_InQ,
+					CALCULATE(
+						[Active Customers],
+						NOT ISBLANK(DimCustomer[FirstPurchaseDate]),
+						DimCustomer[FirstPurchaseDate] < _S,
+						REMOVEFILTERS(DimDate),
+						DATESBETWEEN(DimDate[Date], _S, _E)
+					)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340011
+
+	measure 'Frequency Tier Customers QTD' =
+			VAR _Tier = SELECTEDVALUE(DimFrequencyTier[TierOrder])
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(VALUES(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Orders", CALCULATE(DISTINCTCOUNT(fact_sales[Invoice]), fact_sales[TransactionStatus] = "Active")
+					),
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					DATESBETWEEN(DimDate[Date], _Start, _End),
+					REMOVEFILTERS(DimDate)
+				)
+			VAR _TierFiltered =
+				FILTER(
+					_CustTbl,
+					[@Orders] > 0 &&
+					SWITCH(
+						_Tier,
+						1, [@Orders] = 1,
+						2, [@Orders] >= 2 && [@Orders] <= 3,
+						3, [@Orders] >= 4 && [@Orders] <= 5,
+						4, [@Orders] >= 6,
+						TRUE()
+					)
+				)
+			RETURN
+				IF(
+					ISBLANK(_Tier),
+					[Active Customers QTD],
+					COUNTROWS(_TierFiltered)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340012
+
+	measure 'Frequency Tier Customer Share QTD' = DIVIDE([Frequency Tier Customers QTD], [Active Customers QTD], 0)
+		formatString: 0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340013
+
+	measure 'Frequency Tier Net Sales QTD' =
+			VAR _Tier = SELECTEDVALUE(DimFrequencyTier[TierOrder])
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(VALUES(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Orders", CALCULATE(DISTINCTCOUNT(fact_sales[Invoice]), fact_sales[TransactionStatus] = "Active"),
+						"@Sales", CALCULATE([Net Sales], fact_sales[IsIdentifiedCustomer] = TRUE())
+					),
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					DATESBETWEEN(DimDate[Date], _Start, _End),
+					REMOVEFILTERS(DimDate)
+				)
+			VAR _TierFiltered =
+				FILTER(
+					_CustTbl,
+					[@Orders] > 0 &&
+					SWITCH(
+						_Tier,
+						1, [@Orders] = 1,
+						2, [@Orders] >= 2 && [@Orders] <= 3,
+						3, [@Orders] >= 4 && [@Orders] <= 5,
+						4, [@Orders] >= 6,
+						TRUE()
+					)
+				)
+			RETURN
+				IF(
+					ISBLANK(_Tier),
+					[Identified Customer Sales QTD],
+					SUMX(_TierFiltered, [@Sales])
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340014
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Frequency Tier Sales Share QTD' = DIVIDE([Frequency Tier Net Sales QTD], [Identified Customer Sales QTD], 0)
+		formatString: 0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340015
+
+	measure 'Lifecycle Customers QTD' =
+			VAR _Order = SELECTEDVALUE(DimCustomerLifecycle[LifecycleOrder])
+			RETURN
+				SWITCH(
+					_Order,
+					1, [New Customers QTD],
+					2, [Returning Customers QTD],
+					[Active Customers QTD]
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340016
+
+	measure 'Lifecycle Customer Share QTD' = DIVIDE([Lifecycle Customers QTD], [Active Customers QTD], 0)
+		formatString: 0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340017
+
+	measure 'Lifecycle Net Sales QTD' =
+			VAR _Order = SELECTEDVALUE(DimCustomerLifecycle[LifecycleOrder])
+			RETURN
+				SWITCH(
+					_Order,
+					1, [New Customer Net Sales QTD],
+					2, [Returning Customer Net Sales QTD],
+					[Identified Customer Sales QTD]
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 01. Executive Overview
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340018
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Lifecycle Orders QTD' =
+			VAR _Order = SELECTEDVALUE(DimCustomerLifecycle[LifecycleOrder])
+			RETURN
+				SWITCH(
+					_Order,
+					1, [New Customer Orders QTD],
+					2, [Returning Customer Orders QTD],
+					[New Customer Orders QTD] + [Returning Customer Orders QTD]
+				)
+		formatString: #,0
+		displayFolder: 01. Executive Overview
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340020
+
+	measure 'Lifecycle AOV QTD' = DIVIDE([Lifecycle Net Sales QTD], [Lifecycle Orders QTD], 0)
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		displayFolder: 01. Executive Overview
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340021
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Quarterly Strategic Narrative' =
+			VAR _Active = [Active Customers QTD]
+			VAR _New = [New Customers QTD]
+			VAR _Ret = [Returning Customers QTD]
+			VAR _NewPct = DIVIDE(_New, _Active, 0)
+			VAR _RetPct = DIVIDE(_Ret, _Active, 0)
+			VAR _RetSalesPct = DIVIDE([Returning Customer Net Sales QTD], [Identified Customer Sales QTD], 0)
+			VAR _NewAOV = [New Customer AOV QTD]
+			VAR _RetAOV = [Returning Customer AOV QTD]
+			VAR _AOVDifference = DIVIDE(_RetAOV - _NewAOV, _NewAOV, 0)
+			VAR _Tier4Sales =
+				CALCULATE(
+					[Frequency Tier Net Sales QTD],
+					DimFrequencyTier[TierOrder] = 4
+				)
+			VAR _Tier4Pct = DIVIDE(_Tier4Sales, [Identified Customer Sales QTD], 0)
+			RETURN
+				"“Quarterly customer analysis examines base composition, ordering frequency, and cohort contribution.”" & UNICHAR(10) & UNICHAR(10) &
+				"• Returning Customer Contribution: " & FORMAT(_RetPct, "0.0%") & " returning customers generate " & FORMAT(_RetSalesPct, "0.0%") & " of identified sales." & UNICHAR(10) &
+				"• New Account Additions: " & FORMAT(_New, "#,0") & " new accounts (" & FORMAT(_NewPct, "0.0%") & ") observed in quarter. Average basket difference vs returning accounts is " & FORMAT(_AOVDifference, "+0.0%;-0.0%;0.0%") & "." & UNICHAR(10) &
+				"• Order Frequency Depth: High-frequency accounts (≥6 orders) generate " & FORMAT(_Tier4Pct, "0.0%") & " of identified sales."
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340022
+
+	measure 'Ref Cust Q Sub Active' = "Unique active accounts in quarter"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340023
+
+	measure 'Ref Cust Q Sub New' =
+			VAR _New = [New Customers QTD]
+			VAR _Tot = [Active Customers QTD]
+			RETURN FORMAT(DIVIDE(_New, _Tot, 0), "0.0%") & " of active base"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340024
+
+	measure 'Ref Cust Q Sub Returning' =
+			VAR _Ret = [Returning Customers QTD]
+			VAR _Tot = [Active Customers QTD]
+			RETURN FORMAT(DIVIDE(_Ret, _Tot, 0), "0.0%") & " existing accounts"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340025
+
+	measure 'Ref Cust Q Sub Orders' = FORMAT([Identified Orders QTD], "#,0") & " orders / " & FORMAT([Active Customers QTD], "#,0") & " cust"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340026
+
+	measure 'Ref Cust Q Sub Repeat' = FORMAT([Repeat Customers QTD], "#,0") & " cust with ≥2 orders"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340027
+
+	measure 'Top 20 Customer Sales YTD' =
+			SUMX(
+				TOPN(
+					20,
+					FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+					[Net Sales YTD],
+					DESC
+				),
+				[Net Sales YTD]
+			)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340030
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Top 20 Customer Revenue Share YTD' = DIVIDE([Top 20 Customer Sales YTD], [Identified Customer Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340031
+
+	measure 'VIP and Premium Customers YTD' =
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Sales", [Net Sales YTD]
+					),
+					ALLSELECTED(DimCustomer[CustomerID])
+				)
+			RETURN
+				COUNTROWS(FILTER(_CustTbl, [@Sales] >= 2000))
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340032
+
+	measure 'VIP and Premium Sales YTD' =
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Sales", [Net Sales YTD]
+					),
+					ALLSELECTED(DimCustomer[CustomerID])
+				)
+			RETURN
+				SUMX(FILTER(_CustTbl, [@Sales] >= 2000), [@Sales])
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340033
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'VIP and Premium Revenue Share YTD' = DIVIDE([VIP and Premium Sales YTD], [Identified Customer Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340034
+
+	measure 'Spend Tier Sales YTD' =
+			VAR _TierName = SELECTEDVALUE(DimSpendTier[TierName])
+			VAR _TierOrder = SELECTEDVALUE(DimSpendTier[TierOrder])
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Sales", [Net Sales YTD]
+					),
+					ALLSELECTED(DimCustomer[CustomerID])
+				)
+			VAR _TierFiltered =
+				FILTER(
+					_CustTbl,
+					[@Sales] > 0 &&
+					SWITCH(
+						COALESCE(_TierOrder, 0),
+						1, [@Sales] >= 5000,
+						2, [@Sales] >= 2000 && [@Sales] < 5000,
+						3, [@Sales] >= 500 && [@Sales] < 2000,
+						4, [@Sales] < 500,
+						SWITCH(
+							_TierName,
+							"£5K+", [@Sales] >= 5000,
+							"£2K–£5K", [@Sales] >= 2000 && [@Sales] < 5000,
+							"£2K-£5K", [@Sales] >= 2000 && [@Sales] < 5000,
+							"£500–£2K", [@Sales] >= 500 && [@Sales] < 2000,
+							"£500-£2K", [@Sales] >= 500 && [@Sales] < 2000,
+							"< £500", [@Sales] < 500,
+							"VIP Enterprise (≥ £5k)", [@Sales] >= 5000,
+							"Premium (£2k - £5k)", [@Sales] >= 2000 && [@Sales] < 5000,
+							"Core Regular (£500 - £2k)", [@Sales] >= 500 && [@Sales] < 2000,
+							"Long Tail (< £500)", [@Sales] < 500,
+							TRUE()
+						)
+					)
+				)
+			RETURN
+				IF(
+					ISBLANK(_TierName),
+					[Identified Customer Sales YTD],
+					SUMX(_TierFiltered, [@Sales])
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340035
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Spend Tier Share YTD' = DIVIDE([Spend Tier Sales YTD], [Identified Customer Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340036
+
+	measure 'Spend Tier Customers YTD' =
+			VAR _TierName = SELECTEDVALUE(DimSpendTier[TierName])
+			VAR _TierOrder = SELECTEDVALUE(DimSpendTier[TierOrder])
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Sales", [Net Sales YTD]
+					),
+					ALLSELECTED(DimCustomer[CustomerID])
+				)
+			VAR _TierFiltered =
+				FILTER(
+					_CustTbl,
+					[@Sales] > 0 &&
+					SWITCH(
+						COALESCE(_TierOrder, 0),
+						1, [@Sales] >= 5000,
+						2, [@Sales] >= 2000 && [@Sales] < 5000,
+						3, [@Sales] >= 500 && [@Sales] < 2000,
+						4, [@Sales] < 500,
+						SWITCH(
+							_TierName,
+							"£5K+", [@Sales] >= 5000,
+							"£2K–£5K", [@Sales] >= 2000 && [@Sales] < 5000,
+							"£2K-£5K", [@Sales] >= 2000 && [@Sales] < 5000,
+							"£500–£2K", [@Sales] >= 500 && [@Sales] < 2000,
+							"£500-£2K", [@Sales] >= 500 && [@Sales] < 2000,
+							"< £500", [@Sales] < 500,
+							"VIP Enterprise (≥ £5k)", [@Sales] >= 5000,
+							"Premium (£2k - £5k)", [@Sales] >= 2000 && [@Sales] < 5000,
+							"Core Regular (£500 - £2k)", [@Sales] >= 500 && [@Sales] < 2000,
+							"Long Tail (< £500)", [@Sales] < 500,
+							TRUE()
+						)
+					)
+				)
+			RETURN
+				IF(
+					ISBLANK(_TierName),
+					[Active Customers YTD],
+					COUNTROWS(_TierFiltered)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340037
+
+	measure 'Decile Sales YTD' =
+			VAR _Order = SELECTEDVALUE(DimCustomerDecile[DecileOrder])
+			VAR _TotCust = [Active Customers YTD]
+			VAR _TopNCur = ROUND(_Order * 0.10 * _TotCust, 0)
+			VAR _TopNPrev = ROUND((_Order - 1) * 0.10 * _TotCust, 0)
+			VAR _CustTbl = FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID]))
+			VAR _SalesCur =
+				IF(
+					_Order >= 1 && _Order <= 10,
+					SUMX(
+						TOPN(_TopNCur, _CustTbl, [Net Sales YTD], DESC),
+						[Net Sales YTD]
+					),
+					BLANK()
+				)
+			VAR _SalesPrev =
+				IF(
+					_Order > 1 && _Order <= 10,
+					SUMX(
+						TOPN(_TopNPrev, _CustTbl, [Net Sales YTD], DESC),
+						[Net Sales YTD]
+					),
+					0
+				)
+			RETURN
+				IF(
+					ISBLANK(_Order),
+					[Identified Customer Sales YTD],
+					_SalesCur - _SalesPrev
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340038
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Decile Cumulative Share YTD' =
+			VAR _Order = SELECTEDVALUE(DimCustomerDecile[DecileOrder])
+			VAR _TotCust = [Active Customers YTD]
+			VAR _TopNCur = ROUND(_Order * 0.10 * _TotCust, 0)
+			VAR _CustTbl = FILTER(ALLSELECTED(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID]))
+			VAR _SalesCur =
+				IF(
+					_Order >= 1 && _Order <= 10,
+					SUMX(
+						TOPN(_TopNCur, _CustTbl, [Net Sales YTD], DESC),
+						[Net Sales YTD]
+					),
+					BLANK()
+				)
+			RETURN
+				DIVIDE(_SalesCur, [Identified Customer Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340039
+
+	measure 'Repeat Status Net Sales YTD' =
+			VAR _Order = SELECTEDVALUE(DimRepeatStatus[RepeatOrder])
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), 1, 1)
+			VAR _CustTbl =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(VALUES(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Orders", CALCULATE(DISTINCTCOUNT(fact_sales[Invoice]), fact_sales[TransactionStatus] = "Active"),
+						"@Sales", CALCULATE([Net Sales], fact_sales[IsIdentifiedCustomer] = TRUE())
+					),
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					DATESBETWEEN(DimDate[Date], _Start, _End),
+					REMOVEFILTERS(DimDate)
+				)
+			VAR _Filtered =
+				FILTER(
+					_CustTbl,
+					[@Orders] > 0 &&
+					SWITCH(
+						_Order,
+						1, [@Orders] >= 2,
+						2, [@Orders] = 1,
+						TRUE()
+					)
+				)
+			RETURN
+				IF(
+					ISBLANK(_Order),
+					[Identified Customer Sales YTD],
+					SUMX(_Filtered, [@Sales])
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340041
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Repeat Status Sales Share YTD' = DIVIDE([Repeat Status Net Sales YTD], [Identified Customer Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340042
+
+	measure 'Ref Cust Y Sub Active' = "Unique identified active accounts"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340043
+
+	measure 'Ref Cust Y Sub Top5' =
+			VAR _S = [Top 5 Customer Sales YTD]
+			RETURN "£" & FORMAT(_S, "#,0") & " from Top 5 accounts"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340044
+
+	measure 'Ref Cust Y Sub Top20' =
+			VAR _S = [Top 20 Customer Sales YTD]
+			RETURN "£" & FORMAT(_S, "#,0") & " from Top 20 accounts"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340045
+
+	measure 'Ref Cust Y Sub VIPPrem' =
+			VAR _C = [VIP and Premium Customers YTD]
+			VAR _S = [VIP and Premium Sales YTD]
+			RETURN FORMAT(_C, "#,0") & " accounts generate £" & FORMAT(_S, "#,0")
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340046
+
+	measure 'Ref Cust Y Sub Base' = "100% of tracked customer revenue"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340047
+
+	measure 'Annual Customer Strategic Narrative' =
+			VAR _Top5Pct = [Top 5 Customer Revenue Share YTD]
+			VAR _Top5Sales = [Top 5 Customer Sales YTD]
+			VAR _Top20Pct = [Top 20 Customer Revenue Share YTD]
+			VAR _Top20Sales = [Top 20 Customer Sales YTD]
+			VAR _VIPSales = CALCULATE([Spend Tier Sales YTD], DimSpendTier[TierOrder] = 1)
+			VAR _VIPPct = CALCULATE([Spend Tier Share YTD], DimSpendTier[TierOrder] = 1)
+			VAR _VIPCust = CALCULATE([Spend Tier Customers YTD], DimSpendTier[TierOrder] = 1)
+			VAR _TailCust = CALCULATE([Spend Tier Customers YTD], DimSpendTier[TierOrder] = 4)
+			VAR _TailSales = CALCULATE([Spend Tier Sales YTD], DimSpendTier[TierOrder] = 4)
+			VAR _TailPct = CALCULATE([Spend Tier Share YTD], DimSpendTier[TierOrder] = 4)
+			VAR _Active = [Active Customers YTD]
+			VAR _VIPPremSales = [VIP and Premium Sales YTD]
+			VAR _VIPPremPct = [VIP and Premium Revenue Share YTD]
+			VAR _VIPPremCust = [VIP and Premium Customers YTD]
+			VAR _VIPPremCustPct = DIVIDE(_VIPPremCust, _Active, 0)
+			RETURN
+				"“Annual customer economics show value distribution across key account tiers.”" & UNICHAR(10) & UNICHAR(10) &
+				"• Spend Tier Distribution: Top spend tiers (" & FORMAT(_VIPPremCust, "#,0") & " accounts, " & FORMAT(_VIPPremCustPct, "0.0%") & " of base) account for " & FORMAT(_VIPPremPct, "0.0%") & " of annual sales (" & FORMAT(_VIPPremSales, "£#,0") & ")." & UNICHAR(10) &
+				"• Key Account Concentration: Top 20 accounts generate " & FORMAT(_Top20Pct, "0.0%") & " of revenue (" & FORMAT(_Top20Sales, "£#,0") & "), with Top 5 contributing " & FORMAT(_Top5Pct, "0.0%") & " (" & FORMAT(_Top5Sales, "£#,0") & ")." & UNICHAR(10) &
+				"• £5K+ Spend Accounts: " & FORMAT(_VIPCust, "#,0") & " accounts (≥£5k) contribute " & FORMAT(_VIPPct, "0.0%") & " of sales (" & FORMAT(_VIPSales, "£#,0") & ")." & UNICHAR(10) &
+				"• < £500 Spend Accounts: " & FORMAT(_TailCust, "#,0") & " accounts (<£500, " & FORMAT(DIVIDE(_TailCust, _Active, 0), "0.0%") & " of base) account for " & FORMAT(_TailPct, "0.0%") & " of sales (" & FORMAT(_TailSales, "£#,0") & ")."
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340048
+
+	measure 'Customer Active Net Sales Share YTD' =
+			VAR _CustSales = [Customer Active Net Sales]
+			VAR _TotalIdentified =
+				CALCULATE(
+					[Customer Active Net Sales],
+					ALLSELECTED(DimCustomer[CustomerID]),
+					NOT ISBLANK(DimCustomer[CustomerID])
+				)
+			RETURN
+				DIVIDE(_CustSales, _TotalIdentified, 0)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340049
+
+	measure 'Repeat Customer Sales Share YTD' = CALCULATE([Repeat Status Sales Share YTD], DimRepeatStatus[RepeatOrder] = 1)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340051
+
+	measure 'Annual Repeat Purchase Narrative' =
+			VAR _TotCust = [Active Customers YTD]
+			VAR _TotSales = [Identified Customer Sales YTD]
+			VAR _RepCust = [Repeat Customers YTD]
+			VAR _RepPctBase = DIVIDE(_RepCust, _TotCust, 0)
+			VAR _RepSales = CALCULATE([Repeat Status Net Sales YTD], DimRepeatStatus[RepeatOrder] = 1)
+			VAR _RepPctSales = DIVIDE(_RepSales, _TotSales, 0)
+			VAR _RepARPU = DIVIDE(_RepSales, _RepCust, 0)
+			VAR _OneCust = _TotCust - _RepCust
+			VAR _OnePctBase = DIVIDE(_OneCust, _TotCust, 0)
+			VAR _OneSales = CALCULATE([Repeat Status Net Sales YTD], DimRepeatStatus[RepeatOrder] = 2)
+			VAR _OnePctSales = DIVIDE(_OneSales, _TotSales, 0)
+			VAR _OneARPU = DIVIDE(_OneSales, _OneCust, 0)
+			RETURN
+				"REPEAT CUSTOMERS (≥ 2 orders)" & UNICHAR(10) &
+				"• Accounts: " & FORMAT(_RepCust, "#,0") & " (" & FORMAT(_RepPctBase, "0.0%") & " Base)" & UNICHAR(10) &
+				"• Net Sales: " & FORMAT(_RepSales, "£#,0") & " (" & FORMAT(_RepPctSales, "0.0%") & ")" & UNICHAR(10) &
+				"• Annual ARPU: " & FORMAT(_RepARPU, "£#,0") & " / account" & UNICHAR(10) & UNICHAR(10) &
+				"ONE-TIME BUYERS (1 order only)" & UNICHAR(10) &
+				"• Accounts: " & FORMAT(_OneCust, "#,0") & " (" & FORMAT(_OnePctBase, "0.0%") & " Base)" & UNICHAR(10) &
+				"• Net Sales: " & FORMAT(_OneSales, "£#,0") & " (" & FORMAT(_OnePctSales, "0.0%") & ")" & UNICHAR(10) &
+				"• Annual ARPU: " & FORMAT(_OneARPU, "£#,0") & " / account"
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340052
+
+	measure 'Normalized Cancelled Value YTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), 1, 1)
+			VAR _OutlierLoss =
+				CALCULATE(
+					[Cancelled Values],
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End),
+					fact_sales[StockCode] IN {"23843", "23166"},
+					fact_sales[Quantity] < -50000
+				)
+			RETURN [Cancelled Value YTD] - _OutlierLoss
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340061
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Normalized Cancellation Rate YTD' = DIVIDE([Normalized Cancelled Value YTD], [Gross Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340062
+
+	measure 'Ref Can Y Normalized Rate' =
+			VAR _Val = [Cancelled Value YTD]
+			VAR _Norm = [Normalized Cancelled Value YTD]
+			VAR _OutlierLoss = _Val - _Norm
+			RETURN
+				IF(
+					_OutlierLoss > 0,
+					"Excl. high-value outlier cancellations (" & FORMAT(_OutlierLoss, "£#,0") & ")",
+					"Standard operational cancellations"
+				)
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340064
+
+	measure 'Order Size Cancelled Value MTD' =
+			VAR _TierID = SELECTEDVALUE(DimCancellationOrderSize[OrderSizeTierID])
+			VAR _TierName = SELECTEDVALUE(DimCancellationOrderSize[OrderSizeTier])
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), MONTH(_End), 1)
+			VAR _CancelInvoices =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						CALCULATETABLE(
+							VALUES(fact_sales[Invoice]),
+							fact_sales[IsCancellation] = TRUE()
+						),
+						"@InvoiceLoss", CALCULATE(ABS(SUM(fact_sales[LineAmount])))
+					),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+			VAR _LargeLoss = SUMX(FILTER(_CancelInvoices, [@InvoiceLoss] > 500), [@InvoiceLoss])
+			VAR _StandardLoss = SUMX(FILTER(_CancelInvoices, [@InvoiceLoss] <= 500), [@InvoiceLoss])
+			VAR _IsLarge = _TierID = 1 || _TierName = "Large Orders (> £500)"
+			VAR _IsStandard = _TierID = 2 || _TierName = "Standard Orders (≤ £500)"
+			RETURN
+				IF(
+					_IsLarge,
+					_LargeLoss,
+					IF(
+						_IsStandard,
+						_StandardLoss,
+						[Cancelled Value MTD]
+					)
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340065
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Order Size Cancelled Share MTD' = DIVIDE([Order Size Cancelled Value MTD], [Cancelled Value MTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340066
+
+	measure 'Order Size Wholesale Share Value MTD' = CALCULATE([Order Size Cancelled Share MTD], DimCancellationOrderSize[OrderSizeTierID] = 1)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 01. Executive Overview
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340067
+
+	measure 'Repeat Status Cancelled Value QTD' =
+			VAR _Order = SELECTEDVALUE(DimRepeatStatus[RepeatOrder])
+			VAR _Status = SELECTEDVALUE(DimRepeatStatus[RepeatStatus])
+			VAR _End = [Context End Date]
+			VAR _QStart = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			VAR _CustOrders =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(VALUES(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@CustOrderCount", CALCULATE(DISTINCTCOUNT(fact_sales[Invoice]), fact_sales[TransactionStatus] = "Active")
+					),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _QStart, _End)
+				)
+			VAR _RepeatCusts = SELECTCOLUMNS(FILTER(_CustOrders, [@CustOrderCount] >= 2), "ID", DimCustomer[CustomerID])
+			VAR _OneCusts = SELECTCOLUMNS(FILTER(_CustOrders, [@CustOrderCount] = 1), "ID", DimCustomer[CustomerID])
+			VAR _IsRepeat = _Order = 1 || _Status = "Repeat Customers (≥ 2 orders)"
+			VAR _IsOne = _Order = 2 || _Status = "One-Time Buyers (1 order only)"
+			RETURN
+				IF(
+					_IsRepeat,
+					CALCULATE([Cancelled Value QTD], KEEPFILTERS(DimCustomer[CustomerID] IN _RepeatCusts)),
+					IF(
+						_IsOne,
+						CALCULATE([Cancelled Value QTD], KEEPFILTERS(DimCustomer[CustomerID] IN _OneCusts)),
+						[Cancelled Value QTD]
+					)
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340068
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Repeat Status Cancelled Share QTD' = DIVIDE([Repeat Status Cancelled Value QTD], [Cancelled Value QTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340069
+
+	measure 'Quarterly Repeat Loss Share Value QTD' = CALCULATE([Repeat Status Cancelled Share QTD], DimRepeatStatus[RepeatOrder] = 1)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340070
+
+	measure 'Loss Nature Cancelled Value YTD' =
+			VAR _Type = SELECTEDVALUE(DimCancellationLossType[LossTypeID])
+			VAR _TypeName = SELECTEDVALUE(DimCancellationLossType[LossType])
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), 1, 1)
+			VAR _OutlierLoss =
+				CALCULATE(
+					[Cancelled Values],
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End),
+					fact_sales[StockCode] IN {"23843", "23166"},
+					fact_sales[Quantity] < -50000
+				)
+			VAR _StandardLoss = [Cancelled Value YTD] - _OutlierLoss
+			VAR _IsOutlier = _Type = 1 || _TypeName = "Extreme Outlier Cancellations"
+			VAR _IsStandard = _Type = 2 || _TypeName = "Standard Cancellations"
+			RETURN
+				IF(
+					_IsOutlier,
+					_OutlierLoss,
+					IF(
+						_IsStandard,
+						_StandardLoss,
+						[Cancelled Value YTD]
+					)
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340071
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Loss Nature Cancelled Share YTD' = DIVIDE([Loss Nature Cancelled Value YTD], [Cancelled Value YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340072
+
+	measure 'Loss Nature Outlier Share Value YTD' = CALCULATE([Loss Nature Cancelled Share YTD], DimCancellationLossType[LossTypeID] = 1)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340073
+
+	measure 'Daily Cancelled Value' =
+			VAR _AxisDay = MAX(DimDate[DayOfMonth])
+			VAR _End = [Context End Date]
+			VAR _CY = YEAR(_End)
+			VAR _CM = MONTH(_End)
+			VAR _CurrentDay = DAY(_End)
+			VAR _MaxMonthDay = DAY(EOMONTH(_End, 0))
+			VAR _CutoffDay = MIN(_CurrentDay, _MaxMonthDay)
+			RETURN
+				IF(
+					_AxisDay <= _CutoffDay,
+					CALCULATE(
+						[Cancelled Values],
+						REMOVEFILTERS(DimDate),
+						DimDate[Year] = _CY,
+						DimDate[MonthNo] = _CM,
+						DimDate[DayOfMonth] = _AxisDay
+					)
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340074
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Daily Cancellation Rate' =
+			VAR _AxisDay = MAX(DimDate[DayOfMonth])
+			VAR _End = [Context End Date]
+			VAR _CY = YEAR(_End)
+			VAR _CM = MONTH(_End)
+			VAR _CurrentDay = DAY(_End)
+			VAR _MaxMonthDay = DAY(EOMONTH(_End, 0))
+			VAR _CutoffDay = MIN(_CurrentDay, _MaxMonthDay)
+			VAR _Loss =
+				CALCULATE(
+					[Cancelled Values],
+					REMOVEFILTERS(DimDate),
+					DimDate[Year] = _CY,
+					DimDate[MonthNo] = _CM,
+					DimDate[DayOfMonth] = _AxisDay
+				)
+			VAR _Gross =
+				CALCULATE(
+					[Gross Sales],
+					REMOVEFILTERS(DimDate),
+					DimDate[Year] = _CY,
+					DimDate[MonthNo] = _CM,
+					DimDate[DayOfMonth] = _AxisDay
+				)
+			RETURN
+				IF(
+					_AxisDay <= _CutoffDay && _Gross > 0,
+					DIVIDE(_Loss, _Gross, 0)
+				)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340075
+
+	measure 'Current Quarter Monthly Cancelled Sales' =
+			VAR _End = [Context End Date]
+			VAR _Y = YEAR(_End)
+			VAR _Q = ROUNDUP(MONTH(_End)/3, 0)
+			VAR _M = SELECTEDVALUE(DimDate[MonthNo])
+			VAR _S = DATE(_Y, _M, 1)
+			VAR _InQ = ROUNDUP(_M/3, 0) = _Q
+			VAR _E = IF(_M = MONTH(_End), _End, EOMONTH(_S, 0))
+			RETURN IF(_InQ, CALCULATE([Cancelled Values], REMOVEFILTERS(DimDate), DATESBETWEEN(DimDate[Date], _S, _E)))
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 04. Time Intelligence and Baseline
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340077
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Quarterly Cumulative Loss Trajectory' =
+			VAR _End = [Context End Date]
+			VAR _QStart = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			VAR _CurrentDate = MAX(DimDate[Date])
+			VAR _CumCancel =
+				CALCULATE(
+					[Cancelled Values],
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _QStart, _CurrentDate)
+				)
+			RETURN
+				IF(
+					_CurrentDate >= _QStart && _CurrentDate <= _End,
+					_CumCancel
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 01. Executive Overview
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340078
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Spend Tier Cancelled Value YTD' =
+			VAR _Order = SELECTEDVALUE(DimSpendTier[TierOrder])
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), 1, 1)
+			VAR _CustSpend =
+				CALCULATETABLE(
+					ADDCOLUMNS(
+						FILTER(VALUES(DimCustomer[CustomerID]), NOT ISBLANK(DimCustomer[CustomerID])),
+						"@Sales", CALCULATE(SUM(fact_sales[LineAmount]), fact_sales[TransactionStatus] = "Active")
+					),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+			VAR _VIP = SELECTCOLUMNS(FILTER(_CustSpend, [@Sales] >= 5000), "ID", DimCustomer[CustomerID])
+			VAR _Prem = SELECTCOLUMNS(FILTER(_CustSpend, [@Sales] >= 2000 && [@Sales] < 5000), "ID", DimCustomer[CustomerID])
+			VAR _Core = SELECTCOLUMNS(FILTER(_CustSpend, [@Sales] >= 500 && [@Sales] < 2000), "ID", DimCustomer[CustomerID])
+			VAR _Tail = SELECTCOLUMNS(FILTER(_CustSpend, [@Sales] < 500), "ID", DimCustomer[CustomerID])
+			RETURN
+				SWITCH(
+					_Order,
+					1, CALCULATE([Cancelled Value YTD], KEEPFILTERS(DimCustomer[CustomerID] IN _VIP)),
+					2, CALCULATE([Cancelled Value YTD], KEEPFILTERS(DimCustomer[CustomerID] IN _Prem)),
+					3, CALCULATE([Cancelled Value YTD], KEEPFILTERS(DimCustomer[CustomerID] IN _Core)),
+					4, CALCULATE([Cancelled Value YTD], KEEPFILTERS(DimCustomer[CustomerID] IN _Tail)),
+					[Cancelled Value YTD]
+				)
+		formatString: "£"#,0;-"£"#,0;"£"#,0
+		displayFolder: 03. Cancellation Analysis
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340085
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure 'Tactical Quarterly Diagnostic Readout Q' =
+			VAR _Val = [Cancelled Value QTD]
+			VAR _Rate = [Cancellation Rate QTD]
+			VAR _Orders = [Cancellation Orders QTD]
+			VAR _Merch = [Cancelled Merchandise QTD]
+			RETURN
+				"TACTICAL QUARTERLY DIAGNOSIS" & UNICHAR(10) &
+				"• Quarterly Cancelled Value: " & FORMAT(_Val, "£#,0") & " (" & FORMAT(_Rate, "0.0%") & " cancellation rate)" & UNICHAR(10) &
+				"• Merchandise Impact: " & FORMAT(_Merch, "£#,0") & " across " & FORMAT(_Orders, "#,0") & " cancelled invoices" & UNICHAR(10) &
+				"• Market Focus: Cancellation concentration varies across international and domestic destinations." & UNICHAR(10) &
+				"• Recommended Investigation: Audit top cancelled product SKUs and large-quantity order lines in the quarter."
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340080
+
+	measure 'Executive Strategic Loss Readout Y' =
+			VAR _Val = [Cancelled Value YTD]
+			VAR _RepRate = [Cancellation Rate YTD]
+			VAR _NormRate = [Normalized Cancellation Rate YTD]
+			VAR _OutlierLoss = _Val - [Normalized Cancelled Value YTD]
+			VAR _OutlierPct = DIVIDE(_OutlierLoss, _Val, 0)
+			VAR _OutlierReadout =
+				IF(
+					_OutlierLoss > 0,
+					"High-value outlier orders account for " & FORMAT(_OutlierLoss, "£#,0") & " (" & FORMAT(_OutlierPct, "0.0%") & "). Normalized rate is " & FORMAT(_NormRate, "0.0%") & ".",
+					"No single-order high-value anomalies detected in the selected context (Normalized rate matches reported rate at " & FORMAT(_RepRate, "0.0%") & ")."
+				)
+			RETURN
+				"EXECUTIVE STRATEGIC CANCELLATION REVIEW" & UNICHAR(10) &
+				"• Reported vs Normalized: Total cancelled value is " & FORMAT(_Val, "£#,0") & " (" & FORMAT(_RepRate, "0.0%") & "). " & _OutlierReadout & UNICHAR(10) & UNICHAR(10) &
+				"RECOMMENDED INVESTIGATION:" & UNICHAR(10) &
+				"1. High-Value Order Audit: Review individual transaction records > £5,000 for product concentration." & UNICHAR(10) &
+				"2. Merchandise Review: Cross-examine high-cancellation SKUs against overall sales velocity." & UNICHAR(10) &
+				"3. Account Concentration: Check whether repeat cancellations are concentrated within specific customer accounts."
+		displayFolder: 05. Dynamic Context and UI Labels
+		lineageTag: 7a8b9c0d-1234-5678-90ab-cdef12340081
+
+	measure 'Identified Orders QTD' =
+			VAR _End = [Context End Date]
+			VAR _Start = DATE(YEAR(_End), (ROUNDUP(MONTH(_End)/3, 0) - 1) * 3 + 1, 1)
+			RETURN
+				CALCULATE(
+					[Orders],
+					fact_sales[IsIdentifiedCustomer] = TRUE(),
+					REMOVEFILTERS(DimDate),
+					DATESBETWEEN(DimDate[Date], _Start, _End)
+				)
+		formatString: #,0
+		displayFolder: 02. Customer Intelligence
+		lineageTag: 8f3e1b2a-4c5d-6e7f-8a9b-0c1d2e3f4a5b
+
+	column Column
+		formatString: 0
+		lineageTag: 8ac8bf5f-8af5-4b04-bdf7-0b7b55b7c5e1
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Column]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measure = calculated
+		mode: import
+		source = Row("Column", BLANK())
+
+	annotation PBI_Id = 0def761416ca4c0dbf807f98e54f12bb
+
+	annotation 436ba87b-9c83-4389-a31b-ebd06a36be98 = {"Expression":""}
+

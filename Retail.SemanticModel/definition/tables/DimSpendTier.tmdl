@@ -1,0 +1,39 @@
+table DimSpendTier
+	lineageTag: c8d1e2f3-4a5b-6c7d-8e9f-0123456789bb
+
+	column TierOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: a1b2c3d4-e5f6-47a8-b9c0-111122223355
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [TierOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TierName
+		dataType: string
+		lineageTag: b2c3d4e5-f6a7-48b9-c0d1-222233334466
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [TierName]
+		sortByColumn: TierOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimSpendTier = calculated
+		mode: import
+		source =
+				DATATABLE (
+				    "TierOrder", INTEGER,
+				    "TierName", STRING,
+				    {
+				        { 1, "£5K+" },
+				        { 2, "£2K–£5K" },
+				        { 3, "£500–£2K" },
+				        { 4, "< £500" }
+				    }
+				)
+
+	annotation PBI_Id = c1d2e3f4a5b6789012345678abcdef12
+

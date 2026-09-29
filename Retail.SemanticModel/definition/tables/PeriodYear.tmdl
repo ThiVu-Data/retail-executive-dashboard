@@ -1,0 +1,15 @@
+table PeriodYear
+	lineageTag: 50f5afdf-5227-4ed4-a751-44d39815a63b
+
+	column Year
+		formatString: 0
+		lineageTag: 80edde71-4cac-4122-a8c1-ee68752a0225
+		summarizeBy: none
+		sourceColumn: [Year]
+
+	partition PeriodYear = calculated
+		mode: import
+		source = DISTINCT(SELECTCOLUMNS(DimDate,"Year",DimDate[Year]))
+
+	annotation PBI_Id = c9c3f288b2f64fb7801bf96cbe104603
+

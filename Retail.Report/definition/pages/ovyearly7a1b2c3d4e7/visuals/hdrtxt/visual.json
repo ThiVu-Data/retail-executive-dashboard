@@ -1,0 +1,49 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "hdrtxt",
+  "position": {
+    "x": 62,
+    "y": 35,
+    "z": 7000,
+    "height": 48,
+    "width": 780,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Retail Executive Dashboard",
+                    "textStyle": {
+                      "fontSize": "16pt",
+                      "color": "#FFF9F2",
+                      "fontWeight": "bold"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Performance first · Comparable periods · Key exceptions",
+                    "textStyle": {
+                      "fontSize": "9pt",
+                      "color": "#F5D6C5"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

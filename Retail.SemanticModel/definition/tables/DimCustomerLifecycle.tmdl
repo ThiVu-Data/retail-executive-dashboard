@@ -1,0 +1,37 @@
+table DimCustomerLifecycle
+	lineageTag: e1b2c3d4-7a8b-4c9d-0e1f-123456789abc
+
+	column LifecycleOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: a1b2c3d4-e5f6-47a8-b9c0-333344445555
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [LifecycleOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column LifecycleSegment
+		dataType: string
+		lineageTag: b2c3d4e5-f6a7-48b9-c0d1-444455556666
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [LifecycleSegment]
+		sortByColumn: LifecycleOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimCustomerLifecycle = calculated
+		mode: import
+		source =
+				DATATABLE (
+				    "LifecycleOrder", INTEGER,
+				    "LifecycleSegment", STRING,
+				    {
+				        { 1, "Observed New Customers" },
+				        { 2, "Returning Customers" }
+				    }
+				)
+
+	annotation PBI_Id = c1d2e3f4a5b6789012345678abcdef03
+

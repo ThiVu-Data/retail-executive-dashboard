@@ -1,0 +1,38 @@
+table PeriodMonth
+	lineageTag: 4f498a58-62c1-44ac-a2e1-4e6b8e629301
+
+	column PeriodLabel
+		dataType: string
+		lineageTag: fce16ee7-4bf3-49d3-a251-2554ffd5c05e
+		summarizeBy: none
+		sourceColumn: [PeriodLabel]
+		sortByColumn: PeriodSort
+
+	column PeriodStart
+		isHidden
+		formatString: mmm yyyy
+		lineageTag: d9a37126-2291-4a80-b70c-856c38bf24e7
+		summarizeBy: none
+		sourceColumn: [PeriodStart]
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column PeriodSort
+		isHidden
+		formatString: 0
+		lineageTag: 58a46daf-c9fb-4523-805b-14790a6b6f8b
+		summarizeBy: none
+		sourceColumn: [PeriodSort]
+
+	partition PeriodMonth = calculated
+		mode: import
+		source =
+				SELECTCOLUMNS(
+				    SUMMARIZE(DimDate, DimDate[MonthStart]),
+				    "PeriodLabel", FORMAT(DimDate[MonthStart], "MMM yyyy"),
+				    "PeriodStart", DimDate[MonthStart],
+				    "PeriodSort", YEAR(DimDate[MonthStart])*100 + MONTH(DimDate[MonthStart])
+				)
+
+	annotation PBI_Id = 6d07da993ae24f168a82c5b1c2c31455
+

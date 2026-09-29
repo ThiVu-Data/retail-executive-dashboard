@@ -1,0 +1,52 @@
+table DimProduct
+	lineageTag: 9c19a36a-f187-4955-a414-c35a9d6b0dea
+
+	column StockCode
+		lineageTag: e20a05e9-8d7a-41da-a1b8-d320003ca4ff
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [StockCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		lineageTag: 4ee76f01-b908-45e5-ae0f-228d8e7ca1b0
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Description]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimProduct = calculated
+		mode: import
+		source =
+				
+				VAR ProductList =
+				    DISTINCT (
+				        SELECTCOLUMNS (
+				            fact_sales,
+				            "StockCode", fact_sales[StockCode]
+				        )
+				    )
+				RETURN
+				ADDCOLUMNS (
+				    ProductList,
+				    "Description",
+				        VAR CurrentStockCode = [StockCode]
+				        VAR LatestRow =
+				            TOPN (
+				                1,
+				                FILTER (
+				                    fact_sales,
+				                    fact_sales[StockCode] = CurrentStockCode
+				                        && NOT ISBLANK ( fact_sales[Description] )
+				                ),
+				                fact_sales[InvoiceDate],
+				                DESC
+				            )
+				        RETURN
+				            MAXX ( LatestRow, fact_sales[Description] )
+				)
+
+	annotation PBI_Id = 531e582b220b4bbd8c9b6a553d889027
+

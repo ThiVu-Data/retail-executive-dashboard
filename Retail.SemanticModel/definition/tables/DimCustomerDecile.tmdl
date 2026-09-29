@@ -1,0 +1,45 @@
+table DimCustomerDecile
+	lineageTag: c8d1e2f3-4a5b-6c7d-8e9f-0123456789aa
+
+	column DecileOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: a1b2c3d4-e5f6-47a8-b9c0-111122223344
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DecileOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DecileName
+		dataType: string
+		lineageTag: b2c3d4e5-f6a7-48b9-c0d1-222233334455
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DecileName]
+		sortByColumn: DecileOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimCustomerDecile = calculated
+		mode: import
+		source =
+				DATATABLE (
+				    "DecileOrder", INTEGER,
+				    "DecileName", STRING,
+				    {
+				        { 1, "D1 (Top 10%)" },
+				        { 2, "D2 (11-20%)" },
+				        { 3, "D3 (21-30%)" },
+				        { 4, "D4 (31-40%)" },
+				        { 5, "D5 (41-50%)" },
+				        { 6, "D6 (51-60%)" },
+				        { 7, "D7 (61-70%)" },
+				        { 8, "D8 (71-80%)" },
+				        { 9, "D9 (81-90%)" },
+				        { 10, "D10 (Bottom)" }
+				    }
+				)
+
+	annotation PBI_Id = c1d2e3f4a5b6789012345678abcdef11
+

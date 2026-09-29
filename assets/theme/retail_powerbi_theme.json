@@ -1,0 +1,37 @@
+{
+  "name": "Creamy Terracotta Executive",
+  "dataColors": [
+    "#C95428",
+    "#5A6B5C",
+    "#B94F2F",
+    "#D99A6C",
+    "#8B6F61",
+    "#D8B9A6",
+    "#7A5A49",
+    "#C9A98F"
+  ],
+  "background": "#FBF9F6",
+  "foreground": "#2A201C",
+  "tableAccent": "#C95428",
+  "good": "#2D7A58",
+  "neutral": "#786A62",
+  "bad": "#B94F2F",
+  "textClasses": {
+    "title": {
+      "fontFace": "Aptos",
+      "color": "#2A201C"
+    },
+    "header": {
+      "fontFace": "Aptos",
+      "color": "#2A201C"
+    },
+    "label": {
+      "fontFace": "Aptos",
+      "color": "#4A3B32"
+    },
+    "callout": {
+      "fontFace": "Aptos",
+      "color": "#2A201C"
+    }
+  }
+}

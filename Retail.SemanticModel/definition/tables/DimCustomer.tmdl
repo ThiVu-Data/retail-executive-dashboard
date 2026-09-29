@@ -1,0 +1,45 @@
+table DimCustomer
+	lineageTag: 0eb78939-2514-470d-aa2b-c3c25454c47d
+
+	column CustomerID
+		formatString: 0
+		lineageTag: 150673de-cba2-41e6-a84d-a2b19e339b10
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [CustomerID]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstPurchaseDate =
+			
+			CALCULATE(
+			    MIN(fact_sales[InvoiceDate_Date]),
+			    fact_sales[TransactionStatus]="Active"
+			)
+		formatString: General Date
+		lineageTag: b34d7942-af7e-45de-b390-bf2728fe4e46
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerLabel = FORMAT([CustomerID], "0")
+		dataType: string
+		lineageTag: 785e5f5c-d017-4b92-8cd6-d3848a7d5d6c
+		summarizeBy: none
+
+	partition DimCustomer = calculated
+		mode: import
+		source =
+				
+				DISTINCT (
+				    SELECTCOLUMNS (
+				        FILTER (
+				            fact_sales,
+				            fact_sales[IsIdentifiedCustomer] = TRUE ()
+				        ),
+				        "CustomerID", fact_sales[Customer ID]
+				    )
+				)
+
+	annotation PBI_Id = d05b4374e1dd442580930722c120b74e
+

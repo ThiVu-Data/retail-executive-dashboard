@@ -1,0 +1,76 @@
+table DimCountry
+	lineageTag: 2d78af30-fd44-45bc-b467-b7aff24848a9
+
+	column MarketName
+		lineageTag: ac18a176-e3a6-4216-812d-ea91951acc7c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MarketName]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlagURL
+		lineageTag: 130c97f8-3746-4f1d-99c2-9aeab74b75a1
+		dataCategory: ImageUrl
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [FlagURL]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country
+		lineageTag: c19d5f28-e7aa-4324-892f-da17366f70e8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: fact_sales[Country]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimCountry = calculated
+		mode: import
+		source = ```
+				
+				VAR _Base = DISTINCT(fact_sales[Country])
+				RETURN
+				ADDCOLUMNS(
+				    _Base,
+				    "MarketName", 
+				        SWITCH(
+				            fact_sales[Country],
+				            "United Kingdom", "UK",
+				            fact_sales[Country]
+				        ),
+				    "FlagURL",
+				        VAR _Code = 
+				            SWITCH(
+				                fact_sales[Country],
+				                "United Kingdom", "gb",
+				                "Netherlands", "nl",
+				                "EIRE", "ie",
+				                "Germany", "de",
+				                "France", "fr",
+				                "Switzerland", "ch",
+				                "Spain", "es",
+				                "Belgium", "be",
+				                "Portugal", "pt",
+				                "Australia", "au",
+				                "Norway", "no",
+				                "Italy", "it",
+				                "Channel Islands", "je",
+				                "Finland", "fi",
+				                "Cyprus", "cy",
+				                "Sweden", "se",
+				                "Austria", "at",
+				                "Denmark", "dk",
+				                "Japan", "jp",
+				                "Poland", "pl",
+				                "USA", "us",
+				                "un"
+				            )
+				        RETURN
+				            "https://flagcdn.com/w40/" & _Code & ".png"
+				)
+				```
+
+	annotation PBI_Id = 7fe2377bfa25456fbef4a0d1a49d5fc4
+
