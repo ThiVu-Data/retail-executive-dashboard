@@ -1,20 +1,33 @@
 # Local data setup
 
-The original source for this project is the **Online Retail II Excel workbook**.
+The original source for this project is **Online Retail II** from the UCI Machine Learning Repository.
 
-Python was used upstream to prepare the analytical input and export it to Parquet. Power Query then applies the final source-specific preparation required by the Power BI model.
+- Source: https://archive.ics.uci.edu/dataset/502/online%2Bretail
+- DOI: https://doi.org/10.24432/C5CG6D
+- Original file: `online_retail_II.xlsx`
+- License: CC BY 4.0
 
-The public repository does not include the raw Excel workbook, the local Parquet data file, or Power BI Desktop cache files.
+Python was used upstream for data inspection and preparation, with the analytical input exported to Parquet. Power Query then applies the final source-specific preparation required by the validated Power BI report.
 
-Before refreshing the semantic model:
+The public repository intentionally does **not** include:
 
-1. Place your local `fact_sales.parquet` file on your machine.
-2. Update the file path used by the `fact_sales` query in:
+- the raw Excel workbook;
+- the prepared `fact_sales.parquet` file;
+- the upstream preprocessing notebook;
+- Power BI Desktop cache or local runtime files.
 
-   `Retail.SemanticModel/definition/tables/fact_sales.tmdl`
+The repository focuses on the validated Power BI implementation.
 
-The public copy intentionally uses this placeholder:
+## Refreshing locally
+
+To refresh the semantic model, provide a compatible `fact_sales.parquet` file matching the schema expected by:
+
+`Retail.SemanticModel/definition/tables/fact_sales.tmdl`
+
+Then update the placeholder source path in that file.
+
+The public copy intentionally uses:
 
 `C:\REPLACE_WITH_YOUR_LOCAL_PATH\fact_sales.parquet`
 
-This keeps machine-specific usernames and local folders out of source control. The validated report pages, semantic model, DAX measures, relationships, navigation and formatting are otherwise unchanged.
+This keeps machine-specific usernames and folders out of source control while preserving the report pages, semantic model, DAX measures, relationships, navigation and formatting used in the validated portfolio version.

@@ -2,10 +2,12 @@
 **/.pbi/**
 *.abf
 
-# Local data files (keep the repository lightweight; see data/README.md)
-data/*.parquet
-data/*.csv
-data/*.xlsx
+# Local Power BI/data artifacts
+*.pbix
+*.parquet
+*.csv
+*.xlsx
+*.zip
 
 # OS/editor noise
 .DS_Store

@@ -91,11 +91,24 @@ For the selected December 2011 month to date view through 09 December:
 
 These findings demonstrate how the dashboard supports exception-first management review rather than only descriptive reporting.
 
+## Dataset Source
+
+This project uses **Online Retail II** from the UCI Machine Learning Repository.
+
+- **Creator:** Daqing Chen
+- **Coverage:** 01 December 2009 to 09 December 2011
+- **Original file:** `online_retail_II.xlsx`
+- **License:** CC BY 4.0
+- **DOI:** [10.24432/C5CG6D](https://doi.org/10.24432/C5CG6D)
+- **Official source:** [UCI Machine Learning Repository — Online Retail II](https://archive.ics.uci.edu/dataset/502/online%2Bretail)
+
+The raw Excel workbook is not redistributed in this repository.
+
 ## Data Flow
 
 The original source is the **Online Retail II Excel workbook**.
 
-For this Power BI implementation, Python was used as an upstream preprocessing step to prepare the analytical input and export it to Parquet. Power Query then applies the final source-specific preparation required by the report before the data enters the semantic model.
+Python was used upstream for data inspection and preparation, with the analytical input exported to Parquet. Power Query then applies the final source-specific preparation required by the validated report before the data enters the semantic model. The public repository focuses on the Power BI implementation rather than reproducing the upstream Python workflow.
 
 ```text
 Online Retail II (Excel)
@@ -112,6 +125,20 @@ Power BI semantic model + DAX
 ```
 
 The portfolio focus is the validated Power BI solution: data modeling, DAX, time intelligence, management analysis, interaction design and report presentation.
+
+## Semantic Model
+
+The core reporting model uses `fact_sales` at transaction-line level with four directly related dimensions. Additional disconnected helper tables support period selection and analytical segmentation.
+
+```mermaid
+flowchart LR
+    DimDate --> fact_sales
+    DimCustomer --> fact_sales
+    DimProduct --> fact_sales
+    DimCountry --> fact_sales
+```
+
+The main relationships use `InvoiceDate_Date`, `Customer ID`, `StockCode` and `Country` to keep report filtering predictable.
 
 ## Data and Business Logic
 
@@ -161,11 +188,9 @@ Local Power BI cache and machine-specific settings are intentionally excluded fr
 
 The PBIP source included in this repository does not expose the original local Windows path.
 
-Before refreshing the semantic model, update the placeholder path in the `fact_sales` source definition to the location of your local `fact_sales.parquet` file.
+The prepared `fact_sales.parquet` file is intentionally not included in the public repository. It was produced from the original Online Retail II source through the upstream preparation described above. To refresh the semantic model locally, use a compatible `fact_sales.parquet` file and update the placeholder path in the `fact_sales` source definition.
 
-See `data/README.md` for the data source setup note.
-
-
+See `data/README.md` for the local data setup note.
 
 ## Validation
 
