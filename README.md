@@ -214,3 +214,11 @@ The public repository excludes internal QA artifacts and local Power BI runtime 
 This project demonstrates practical Data Analyst and Business Intelligence work rather than only dashboard formatting.
 
 The emphasis is on translating transaction data into a concise management view, validating business logic, identifying exceptions and presenting information in a form that supports faster decisions.
+
+## Profile
+
+**Thi Vu**  
+Data & BI Analyst
+
+LinkedIn: https://www.linkedin.com/in/thivu-data/  
+GitHub: https://github.com/ThiVu-Data
